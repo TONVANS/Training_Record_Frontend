@@ -1,6 +1,4 @@
-/**
- * Shared Enums and Common Types for the Training Management System
- */
+// src/types/common.ts
 
 /**
  * Training Format Enum
