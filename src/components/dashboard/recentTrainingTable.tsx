@@ -1,6 +1,7 @@
 // src/components/dashboard/recentTrainingTable.tsx
 import React from 'react';
 import { MoreVertical, Calendar, Users, Folder } from 'lucide-react';
+import Link from 'next/link';
 
 // Adjusted to match Backend response structure
 interface RecentTrainingTableProps {
@@ -40,9 +41,9 @@ export function RecentTrainingTable({ upcomingCourses = [], isLoading = false }:
           <h3 className="text-lg font-bold text-gray-900 tracking-tight">ການຝຶກອົບຮົມໄວໆນີ້ & ກຳລັງຈັດ</h3>
           <p className="text-sm text-gray-400 font-medium mt-0.5">Upcoming & Active Trainings</p>
         </div>
-        <button className="text-sm text-[#1275e2] hover:text-[#0a468c] font-bold hover:underline transition-colors px-4 py-2 bg-blue-50 rounded-xl">
+        <Link href="/trainings" className="text-sm text-[#1275e2] hover:text-[#0a468c] font-bold hover:underline transition-colors px-4 py-2 bg-blue-50 rounded-xl">
           ເບິ່ງທັງໝົດ
-        </button>
+        </Link>
       </div>
 
       {isLoading ? (
