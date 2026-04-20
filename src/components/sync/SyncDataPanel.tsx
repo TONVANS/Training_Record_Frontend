@@ -17,8 +17,11 @@ import {
   ArrowDownToLine,
   Zap,
   Clock,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import {
   useSyncStore,
   SYNC_ENTITY_LABELS,
@@ -37,7 +40,6 @@ const ENTITY_ICONS: Record<SyncEntityKey, React.ReactNode> = {
   employeesAll: <Users size={22} />,
 };
 
-// ── Gradient Mapping ──────────────────────────────────
 const ENTITY_GRADIENTS: Record<SyncEntityKey, string> = {
   departments: "from-blue-500 to-blue-600",
   divisions: "from-indigo-500 to-indigo-600",
@@ -48,26 +50,23 @@ const ENTITY_GRADIENTS: Record<SyncEntityKey, string> = {
   employeesAll: "from-amber-500 to-orange-500",
 };
 
-const ENTITY_BG_LIGHT: Record<SyncEntityKey, string> = {
-  departments: "bg-blue-50 border-blue-100",
-  divisions: "bg-indigo-50 border-indigo-100",
-  units: "bg-violet-50 border-violet-100",
-  positionGroups: "bg-cyan-50 border-cyan-100",
-  positionCodes: "bg-teal-50 border-teal-100",
-  positions: "bg-emerald-50 border-emerald-100",
-  employeesAll: "bg-amber-50 border-amber-100",
-};
-
-// ── Descriptions (Lao) ────────────────────────────────
 const ENTITY_DESCRIPTIONS: Record<SyncEntityKey, string> = {
-  departments: "ດຶງຂໍ້ມູນພະແນກຈາກລະບົບ HRM",
-  divisions: "ດຶງຂໍ້ມູນຝ່າຍ/ພາກສ່ວນຈາກ HRM",
+  departments: "ດຶງຂໍ້ມູນຝ່າຍຈາກລະບົບ HRM",
+  divisions: "ດຶງຂໍ້ມູນພະແນກຈາກ HRM",
   units: "ດຶງຂໍ້ມູນໜ່ວຍງານຈາກ HRM",
   positionGroups: "ດຶງຂໍ້ມູນກຸ່ມຕຳແໜ່ງຈາກ HRM",
   positionCodes: "ດຶງຂໍ້ມູນລະຫັດຕຳແໜ່ງຈາກ HRM",
   positions: "ດຶງຂໍ້ມູນຕຳແໜ່ງຈາກ HRM",
-  employeesAll: "ດຶງຂໍ້ມູນພະນັກງານທຸກພະແນກ",
+  employeesAll: "ດຶງຂໍ້ມູນພະນັກງານທຸກຝ່າຍ",
 };
+
+// ── Progress color by value ───────────────────────────
+function progressColor(pct: number) {
+  if (pct >= 100) return "bg-emerald-500";
+  if (pct >= 60) return "bg-blue-500";
+  if (pct >= 30) return "bg-amber-500";
+  return "bg-blue-400";
+}
 
 // ── Single Sync Card ──────────────────────────────────
 function SyncCard({ entityKey }: { entityKey: SyncEntityKey }) {
@@ -92,6 +91,9 @@ function SyncCard({ entityKey }: { entityKey: SyncEntityKey }) {
     });
   };
 
+  const isLoading = state.isLoading;
+  const pct = state.progress ?? 0;
+
   return (
     <div
       id={`sync-card-${entityKey}`}
@@ -103,8 +105,8 @@ function SyncCard({ entityKey }: { entityKey: SyncEntityKey }) {
       {/* Top accent line */}
       <div
         className={cn(
-          "h-1 w-full bg-gradient-to-r transition-all duration-500",
-          state.isLoading
+          "h-1 w-full bg-linear-to-r transition-all duration-500",
+          isLoading
             ? "from-blue-400 via-purple-400 to-blue-400 animate-[shimmer_2s_ease-in-out_infinite]"
             : state.result
               ? "from-emerald-400 to-emerald-500"
@@ -121,7 +123,7 @@ function SyncCard({ entityKey }: { entityKey: SyncEntityKey }) {
             <div
               className={cn(
                 "w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg shrink-0 transition-transform duration-300 group-hover:scale-105",
-                `bg-gradient-to-br ${ENTITY_GRADIENTS[entityKey]}`
+                `bg-linear-to-br ${ENTITY_GRADIENTS[entityKey]}`
               )}
             >
               {ENTITY_ICONS[entityKey]}
@@ -135,29 +137,61 @@ function SyncCard({ entityKey }: { entityKey: SyncEntityKey }) {
                 {ENTITY_DESCRIPTIONS[entityKey]}
               </p>
 
-              {/* Result Badge */}
-              {state.result && !state.isLoading && (
+              {/* ── Progress Bar (visible when loading) ── */}
+              {isLoading && (
+                <div className="mt-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[11px] font-semibold text-blue-600 flex items-center gap-1.5">
+                      <Loader2 size={11} className="animate-spin" />
+                      {state.progressMessage || "ກຳລັງໂຫຼດ..."}
+                    </span>
+                    <span className="text-[11px] font-bold text-blue-700 tabular-nums">
+                      {pct}%
+                    </span>
+                  </div>
+                  <Progress
+                    value={pct}
+                    className="h-2 bg-blue-100"
+                    indicatorClassName={cn(
+                      "transition-all duration-500",
+                      progressColor(pct)
+                    )}
+                  />
+                </div>
+              )}
+
+              {/* Result Badge (when done) */}
+              {state.result && !isLoading && (
                 <div className="flex items-center gap-3 mt-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
+                  <Badge
+                    variant="outline"
+                    className="text-emerald-700 bg-emerald-50 border-emerald-200 font-bold text-xs gap-1.5 px-2.5 py-1"
+                  >
                     <CheckCircle2 size={13} />
                     Synced: {state.result.synced}
-                  </span>
+                  </Badge>
                   {state.result.errors > 0 && (
-                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-red-700 bg-red-50 border border-red-200 px-2.5 py-1 rounded-lg">
+                    <Badge
+                      variant="outline"
+                      className="text-red-700 bg-red-50 border-red-200 font-bold text-xs gap-1.5 px-2.5 py-1"
+                    >
                       <XCircle size={13} />
                       Errors: {state.result.errors}
-                    </span>
+                    </Badge>
                   )}
                 </div>
               )}
 
               {/* Error Message */}
-              {state.error && !state.isLoading && (
+              {state.error && !isLoading && (
                 <div className="flex items-center gap-2 mt-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-red-700 bg-red-50 border border-red-200 px-2.5 py-1 rounded-lg">
+                  <Badge
+                    variant="outline"
+                    className="text-red-700 bg-red-50 border-red-200 font-bold text-xs gap-1.5 px-2.5 py-1"
+                  >
                     <AlertTriangle size={13} />
                     {state.error}
-                  </span>
+                  </Badge>
                 </div>
               )}
 
@@ -175,23 +209,23 @@ function SyncCard({ entityKey }: { entityKey: SyncEntityKey }) {
           <Button
             id={`sync-btn-${entityKey}`}
             onClick={handleSync}
-            disabled={state.isLoading}
+            disabled={isLoading}
             size="sm"
             className={cn(
               "shrink-0 rounded-xl h-10 px-4 font-bold text-xs shadow-md transition-all duration-300",
-              state.isLoading
+              isLoading
                 ? "bg-gray-100 text-gray-400 shadow-none"
-                : "bg-gradient-to-r from-[#1275e2] to-[#0f62c0] hover:from-[#0f62c0] hover:to-[#0a468c] text-white hover:shadow-lg hover:shadow-blue-500/20"
+                : "bg-linear-to-r from-[#1275e2] to-[#0f62c0] hover:from-[#0f62c0] hover:to-[#0a468c] text-white hover:shadow-lg hover:shadow-blue-500/20"
             )}
           >
             <RefreshCw
               size={14}
               className={cn(
                 "mr-1.5 transition-transform",
-                state.isLoading && "animate-spin"
+                isLoading && "animate-spin"
               )}
             />
-            {state.isLoading ? "ກຳລັງ Sync..." : "Sync"}
+            {isLoading ? `${pct}%` : "Sync"}
           </Button>
         </div>
       </div>
@@ -199,17 +233,52 @@ function SyncCard({ entityKey }: { entityKey: SyncEntityKey }) {
   );
 }
 
+// ── Sync All Progress Banner ──────────────────────────
+function SyncAllProgressBanner() {
+  const { isSyncingAll, syncAllProgress, syncAllProgressMessage } =
+    useSyncStore();
+
+  if (!isSyncingAll) return null;
+
+  return (
+    <div className="relative z-10 mt-6 p-5 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl animate-in slide-in-from-top-4 fade-in duration-300">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Loader2 size={16} className="text-white animate-spin" />
+          <span className="text-white font-bold text-sm">
+            {syncAllProgressMessage || "ກຳລັງ Sync..."}
+          </span>
+        </div>
+        <span className="text-white/90 font-black text-lg tabular-nums">
+          {syncAllProgress}%
+        </span>
+      </div>
+
+      {/* Progress bar inside the banner */}
+      <div className="relative h-3 w-full rounded-full bg-white/20 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-[#ffb13b] transition-all duration-500 ease-out"
+          style={{ width: `${syncAllProgress}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 // ── Main Panel ────────────────────────────────────────
 export default function SyncDataPanel() {
-  const { isSyncingAll, syncAllStructure, syncAllResults, clearResults } =
-    useSyncStore();
+  const {
+    isSyncingAll,
+    syncAllStructure,
+    syncAllResults,
+    clearResults,
+    syncAllProgress,
+  } = useSyncStore();
   const entities = useSyncStore((s) => s.entities);
 
-  // Check if anything is currently syncing
   const isAnythingSyncing =
     isSyncingAll || Object.values(entities).some((e) => e.isLoading);
 
-  // Structure entity keys (exclude employees)
   const structureKeys: SyncEntityKey[] = [
     "departments",
     "divisions",
@@ -226,7 +295,7 @@ export default function SyncDataPanel() {
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-8 duration-700 ease-out">
       {/* ── Hero Banner ── */}
-      <div className="relative bg-gradient-to-br from-[#0a468c] via-[#0f62c0] to-[#1275e2] rounded-3xl p-8 sm:p-10 shadow-xl shadow-blue-900/10 overflow-hidden">
+      <div className="relative bg-linear-to-br from-[#0a468c] via-[#0f62c0] to-[#1275e2] rounded-3xl p-8 sm:p-10 shadow-xl shadow-blue-900/10 overflow-hidden">
         {/* Decorative blobs */}
         <div className="absolute top-[-20%] right-[-5%] w-[400px] h-[400px] bg-white/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-[-20%] left-[10%] w-[300px] h-[300px] bg-[#ffb13b]/20 rounded-full blur-3xl pointer-events-none" />
@@ -248,7 +317,6 @@ export default function SyncDataPanel() {
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto">
-            {/* Sync All Structure Button */}
             <Button
               id="sync-all-structure-btn"
               onClick={syncAllStructure}
@@ -260,14 +328,19 @@ export default function SyncDataPanel() {
                   : "bg-[#ffb13b] hover:bg-[#e59e35] text-blue-950 hover:shadow-xl hover:shadow-amber-500/20"
               )}
             >
-              <Zap
-                size={18}
-                className={cn("mr-2", isSyncingAll && "animate-pulse")}
-              />
-              {isSyncingAll ? "ກຳລັງ Sync ທັງໝົດ..." : "Sync ໂຄງສ້າງທັງໝົດ"}
+              {isSyncingAll ? (
+                <>
+                  <Loader2 size={18} className="mr-2 animate-spin" />
+                  {syncAllProgress}% ກຳລັງ Sync...
+                </>
+              ) : (
+                <>
+                  <Zap size={18} className="mr-2" />
+                  Sync ໂຄງສ້າງທັງໝົດ
+                </>
+              )}
             </Button>
 
-            {/* Clear Button */}
             <Button
               id="sync-clear-btn"
               variant="secondary"
@@ -280,8 +353,11 @@ export default function SyncDataPanel() {
           </div>
         </div>
 
-        {/* Sync All Results Summary */}
-        {syncAllResults && (
+        {/* Progress banner (during syncAll) */}
+        <SyncAllProgressBanner />
+
+        {/* Sync All Results Summary (after complete) */}
+        {syncAllResults && !isSyncingAll && (
           <div className="relative z-10 mt-6 p-5 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl animate-in slide-in-from-top-4 fade-in duration-300">
             <div className="flex items-center gap-3 mb-3">
               <CheckCircle2 size={20} className="text-emerald-300" />
@@ -291,23 +367,24 @@ export default function SyncDataPanel() {
             </div>
             <div className="flex flex-wrap gap-2">
               {syncAllResults.map((r) => (
-                <span
+                <Badge
                   key={r.entity}
+                  variant="outline"
                   className={cn(
-                    "inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border",
+                    "text-xs font-bold px-3 py-1.5",
                     r.errors > 0
                       ? "text-red-200 border-red-400/30 bg-red-500/10"
                       : "text-emerald-200 border-emerald-400/30 bg-emerald-500/10"
                   )}
                 >
                   {r.errors > 0 ? (
-                    <XCircle size={12} />
+                    <XCircle size={12} className="mr-1" />
                   ) : (
-                    <CheckCircle2 size={12} />
+                    <CheckCircle2 size={12} className="mr-1" />
                   )}
                   {r.entity}: {r.synced}
                   {r.errors > 0 && ` (${r.errors} err)`}
-                </span>
+                </Badge>
               ))}
             </div>
           </div>
@@ -317,7 +394,7 @@ export default function SyncDataPanel() {
       {/* ── Organization Structure Section ── */}
       <div>
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1275e2] to-[#0f62c0] text-white flex items-center justify-center shadow-md">
+          <div className="w-9 h-9 rounded-xl bg-linear-to-br from-[#1275e2] to-[#0f62c0] text-white flex items-center justify-center shadow-md">
             <Building2 size={18} />
           </div>
           <div>
@@ -325,7 +402,7 @@ export default function SyncDataPanel() {
               ໂຄງສ້າງອົງກອນ
             </h2>
             <p className="text-xs text-gray-500 mt-1 font-medium">
-              ພະແນກ, ຝ່າຍ, ໜ່ວຍງານ ແລະ ຕຳແໜ່ງ
+              ຝ່າຍ, ພະແນກ, ໜ່ວຍງານ ແລະ ຕຳແໜ່ງ
             </p>
           </div>
         </div>
@@ -340,7 +417,7 @@ export default function SyncDataPanel() {
       {/* ── Employees Section ── */}
       <div>
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-md">
+          <div className="w-9 h-9 rounded-xl bg-linear-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-md">
             <Users size={18} />
           </div>
           <div>
@@ -357,6 +434,29 @@ export default function SyncDataPanel() {
           <SyncCard entityKey="employeesAll" />
         </div>
 
+        {/* Employee progress detail (expanded when syncing) */}
+        {entities.employeesAll.isLoading && entities.employeesAll.progress > 0 && (
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-2xl animate-in fade-in duration-300">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-bold text-blue-800 flex items-center gap-2">
+                <Loader2 size={14} className="animate-spin" />
+                {entities.employeesAll.progressMessage}
+              </p>
+              <span className="text-sm font-black text-blue-700 tabular-nums">
+                {entities.employeesAll.progress}%
+              </span>
+            </div>
+            <Progress
+              value={entities.employeesAll.progress}
+              className="h-2.5 bg-blue-200"
+              indicatorClassName={cn(
+                "transition-all duration-500",
+                progressColor(entities.employeesAll.progress)
+              )}
+            />
+          </div>
+        )}
+
         {/* Warning note */}
         <div className="mt-4 flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
           <AlertTriangle
@@ -366,7 +466,7 @@ export default function SyncDataPanel() {
           <div>
             <p className="text-sm font-bold text-amber-800">ໝາຍເຫດ</p>
             <p className="text-xs text-amber-700 mt-1 leading-relaxed">
-              ການ Sync ພະນັກງານທັງໝົດຈະ Sync ທຸກພະແນກເທື່ອລະພະແນກ
+              ການ Sync ພະນັກງານທັງໝົດຈະ Sync ທຸກຝ່າຍເທື່ອລະພະແນກ
               ອາດໃຊ້ເວລາຫຼາຍນາທີ. ກະລຸນາຢ່າປິດໜ້ານີ້ ຫຼື refresh
               ໃນຂະນະທີ່ກຳລັງ Sync.
             </p>

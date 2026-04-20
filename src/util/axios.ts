@@ -7,7 +7,7 @@ import axios, {
 
 const api = axios.create({
   // ຖ້າຢູ່ Client ໃຫ້ໃຊ້ /api (Proxy) ຖ້າຢູ່ Server ໃຫ້ໃຊ້ URL ເຕັມ
-  baseURL: typeof window !== "undefined" ? '/api' : process.env.NEXT_PUBLIC_API_URL,
+  baseURL: typeof window !== "undefined" ? process.env.NEXT_PUBLIC_API_URL : process.env.NEXT_PUBLIC_API_URL,
   headers: {
     "Content-Type": "application/json",
   },
