@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
     return [
       {
         // source: ຄື Path ທີ່ Frontend ຈະເອີ້ນໃຊ້ (ຕົວຢ່າງ Browser ຈະເຫັນແຕ່ /api/...)
-        source: '/api/:path*', 
+        source: '/api/v1/:path*', 
         
         // destination: ຄື URL ຂອງ Backend ຕົວຈິງ (NestJS ຂອງທ່ານ)
         // ໝາຍເຫດ: ໃຫ້ປ່ຽນ http://localhost:3400 ເປັນ URL ຫຼື Port Backend ຂອງທ່ານ

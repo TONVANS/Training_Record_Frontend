@@ -7,7 +7,8 @@ import {
     LayoutDashboard, BookOpen, GraduationCap,
     FileText, Settings, X, LogOut, User,
     PanelLeftClose, PanelLeftOpen,
-    GalleryVerticalEnd, CalendarCog, UserStar, FileUser
+    GalleryVerticalEnd, CalendarCog, UserStar, FileUser,
+    DatabaseZap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth/authStore';
@@ -47,6 +48,7 @@ const menuGroups = [
     {
         label: 'ລະບົບ',
         items: [
+            { name: 'Sync ຂໍ້ມູນ HRM', href: '/sync_data', icon: DatabaseZap },
             { name: 'ຈັດການສິດຜູ້ໃຊ້', href: '/role_management', icon: UserStar },
             { name: 'ແຈ້ງເຕືອນ', href: '/notification', icon: CalendarCog },
             // { name: 'ຕັ້ງຄ່າ (Settings)', href: '/settings', icon: Settings },
