@@ -73,7 +73,7 @@ export function Sidebar({ isOpen, onClose, currentPath, isCollapsed, toggleColla
 
             <aside
                 className={cn(
-                    "fixed top-0 left-0 z-30 h-full bg-gradient-to-b from-[#0a468c] to-[#0f62c0] text-white transition-all duration-300 ease-in-out shadow-2xl lg:static border-r border-white/5 flex flex-col",
+                    "fixed top-0 left-0 z-30 h-full bg-linear-to-b from-[#0a468c] to-[#0f62c0] text-white transition-all duration-300 ease-in-out shadow-2xl lg:static border-r border-white/5 flex flex-col",
                     isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
                     isCollapsed ? "lg:w-20" : "lg:w-64"
                 )}

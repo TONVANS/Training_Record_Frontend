@@ -160,7 +160,7 @@ export const generateTrainingReportHTML = (report: TrainingReportResponse): stri
                     margin-top: 40px; padding: 0 30px;
                     font-size: 11px; line-height: 1.8;
                 }
-                .signature-box  { text-align: center; width: 180px; }
+                .signature-box  { text-align: center; width: 260px; }
                 .signature-line { margin-top: 70px; border-bottom: 1px dotted #000; }
 
                 @media print {
