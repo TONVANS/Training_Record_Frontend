@@ -1,3 +1,4 @@
+// src/components/reports/ReportByDepartment.tsx
 "use client";
 import React, { useEffect, useState } from "react";
 import { Users, Printer, Eye, Loader2, Filter, Check, ChevronsUpDown } from "lucide-react";
@@ -15,11 +16,12 @@ import { cn } from "@/lib/utils";
 import { useDepartmentReportStore } from "@/store/report/departmentReportStore";
 import { ReportPeriodType } from "@/types/report";
 import { format } from "date-fns";
-import { downloadDepartmentReportPDF, generateDepartmentPreviewHtmlUrl } from "@/util/pdfDepartmentReport";
+import { downloadDepartmentReportPDF, generateDepartmentPreviewHtmlUrl, fetchAllDeptReportPagesForPDF } from "@/util/pdfDepartmentReport";
 import { toast } from "sonner";
+import { ReportPagination } from "@/components/ui/ReportPagination";
 
 export function ReportByDepartment() {
-    const { reportData, departments, isLoading, fetchReport, fetchDepartments } = useDepartmentReportStore();
+    const { reportData, departments, isLoading, fetchReport, fetchDepartments, setPage, currentPage } = useDepartmentReportStore();
     const [isDownloading, setIsDownloading] = useState(false);
     const [openDeptCombobox, setOpenDeptCombobox] = useState(false);
     const [selectedDeptId, setSelectedDeptId] = useState<number | "">("");
@@ -66,22 +68,32 @@ export function ReportByDepartment() {
         return null;
     };
 
-    const handlePreview = () => {
-        if (!reportData) return;
-        const url = generateDepartmentPreviewHtmlUrl(reportData);
-        window.open(url, "_blank", "noopener,noreferrer");
-        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    const handlePreview = async () => {
+        if (!reportData || !selectedDeptId) return;
+        toast.info("ກຳລັງກຽມຂໍ້ມູນ...");
+        try {
+            // ✅ ใช้ Batch Fetch ดึงทีละ 50 
+            const allData = await fetchAllDeptReportPagesForPDF(reportData.report_info, 50);
+
+            const url = generateDepartmentPreviewHtmlUrl(allData);
+            window.open(url, "_blank", "noopener,noreferrer");
+            setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        } catch {
+            toast.error("ເກີດຂໍ້ຜິດພາດໃນການກຽມຂໍ້ມູນ");
+        }
     };
 
     const handleDownloadPdf = async () => {
-        if (!reportData) return;
+        if (!reportData || !selectedDeptId) return;
         setIsDownloading(true);
-        toast.info("ກຳລັງສ້າງເອກະສານ PDF ລາຍງານຝ່າຍ...");
+        toast.info("ກຳລັງດຶງຂໍ້ມູນທັງໝົດເພື່ອສ້າງ PDF...");
         try {
-            await downloadDepartmentReportPDF(reportData);
+            // ✅ ใช้ Batch Fetch
+            const allData = await fetchAllDeptReportPagesForPDF(reportData.report_info, 50);
+
+            await downloadDepartmentReportPDF(allData);
             toast.success("Print PDF ສຳເລັດແລ້ວ!");
-        } catch (error) {
-            console.error("PDF generation failed:", error);
+        } catch {
             toast.error("ເກີດຂໍ້ຜິດພາດໃນການສ້າງ PDF");
         } finally {
             setIsDownloading(false);
@@ -247,7 +259,7 @@ export function ReportByDepartment() {
                             <TableRow className="border-b border-gray-200">
                                 <TableHead rowSpan={3} className="text-center w-8 border-r align-middle sticky left-0 bg-gray-50 z-20">ລ/ດ</TableHead>
                                 <TableHead rowSpan={3} className="border-r w-24 align-middle text-center sticky left-8 bg-gray-50 z-20">ລະຫັດ</TableHead>
-                                <TableHead rowSpan={3} className="border-r w-40 align-middle sticky left-[7rem] bg-gray-50 z-20">ຊື່ ແລະ ນາມສະກຸນ</TableHead>
+                                <TableHead rowSpan={3} className="border-r w-40 align-middle sticky left-28 bg-gray-50 z-20">ຊື່ ແລະ ນາມສະກຸນ</TableHead>
                                 <TableHead rowSpan={3} className="border-r w-32 align-middle">ຕຳແໜ່ງ</TableHead>
                                 <TableHead rowSpan={3} className="border-r w-44 align-middle">ຫົວຂໍ້ຝຶກອົບຮົມ</TableHead>
                                 <TableHead colSpan={7} className="text-center border-r">ຈຳນວນຜູ້ເຂົ້າຝຶກ</TableHead>
@@ -306,7 +318,7 @@ export function ReportByDepartment() {
                                                 <TableRow key={course.no} className="border-b border-gray-100 hover:bg-gray-50">
                                                     <TableCell className="text-center border-r font-medium sticky left-0 bg-white">{course.no}</TableCell>
                                                     <TableCell className="text-center border-r text-gray-400 sticky left-8 bg-white">-</TableCell>
-                                                    <TableCell className="border-r text-gray-400 sticky left-[7rem] bg-white">-</TableCell>
+                                                    <TableCell className="border-r text-gray-400 sticky left-28 bg-white">-</TableCell>
                                                     <TableCell className="border-r text-gray-400">-</TableCell>
                                                     <TableCell className="font-medium border-r">{course.course_title}</TableCell>
                                                     <TableCell className="text-center border-r text-blue-700">{course.attendees.technical.male || "-"}</TableCell>
@@ -331,14 +343,14 @@ export function ReportByDepartment() {
                                         return attendees.map((emp, idx) => (
                                             <TableRow key={`${course.no}-${idx}`} className="border-b border-gray-100 hover:bg-gray-50">
                                                 {idx === 0 && (
-                                                    <TableCell rowSpan={rowSpan} className="text-center border-r font-medium align-top pt-2 sticky left-0 bg-white z-[1]">
+                                                    <TableCell rowSpan={rowSpan} className="text-center border-r font-medium align-top pt-2 sticky left-0 bg-white z-1">
                                                         {course.no}
                                                     </TableCell>
                                                 )}
-                                                <TableCell className="text-center border-r font-medium text-indigo-600 sticky left-8 bg-white z-[1]">
+                                                <TableCell className="text-center border-r font-medium text-indigo-600 sticky left-8 bg-white z-1">
                                                     {emp.employee_code}
                                                 </TableCell>
-                                                <TableCell className="border-r font-medium sticky left-[7rem] bg-white z-[1]">
+                                                <TableCell className="border-r font-medium sticky left-28 bg-white z-1">
                                                     {emp.full_name}
                                                 </TableCell>
                                                 <TableCell className="border-r text-gray-600 text-[11px]">{emp.position}</TableCell>
@@ -395,6 +407,13 @@ export function ReportByDepartment() {
                         </TableBody>
                     </Table>
                 </div>
+                {reportData?.pagination && (
+                    <ReportPagination
+                        pagination={reportData.pagination}
+                        onPageChange={(p) => setPage(Number(selectedDeptId), p)}
+                        isLoading={isLoading}
+                    />
+                )}
             </div>
         </div>
     );

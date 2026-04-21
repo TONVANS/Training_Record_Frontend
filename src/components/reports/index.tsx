@@ -4,31 +4,40 @@ import { useEffect, useState } from "react";
 import { FileText, Printer, Eye, Loader2, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+    Table, TableBody, TableCell,
+    TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { useReportStore } from "@/store/report/reportStore";
 import { ReportPeriodType } from "@/types/report";
 import { format } from "date-fns";
-import { generatePreviewHtmlUrl, downloadReportPDF, formatCurrency } from "@/util/pdfReport";
+import {
+    generatePreviewHtmlUrl,
+    downloadReportPDF,
+    formatCurrency,
+    fetchAllReportPagesForPDF,
+} from "@/util/pdfReport";
 import { toast } from "sonner";
+import { ReportPagination } from "@/components/ui/ReportPagination";
 
 export function TrainingReport() {
-    const { reportData, isLoading, fetchReport } = useReportStore();
-    const [isDownloading, setIsDownloading] = useState(false);
+    const {
+        reportData,
+        isLoading,
+        currentPage,
+        fetchReport,
+        setPage,
+    } = useReportStore();
 
+    const [isDownloading, setIsDownloading] = useState(false);
     const currentYear = new Date().getFullYear();
     const [filterYear, setFilterYear] = useState<number>(currentYear);
     const [filterType, setFilterType] = useState<ReportPeriodType>("MONTHLY");
     const [filterValue, setFilterValue] = useState<number>(new Date().getMonth() + 1);
 
+    // เมื่อ filter เปลี่ยน → reset ไปหน้า 1
     useEffect(() => {
         const valueToSend = filterType === "YEARLY" ? undefined : filterValue;
-        fetchReport(filterYear, filterType, valueToSend);
+        fetchReport(filterYear, filterType, valueToSend, 1);
     }, [filterYear, filterType, filterValue, fetchReport]);
 
     const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -54,22 +63,33 @@ export function TrainingReport() {
         return null;
     };
 
-    const handlePreview = () => {
+    // Preview/PDF ดึงข้อมูลทั้งหมด (pageSize ใหญ่มาก) แล้วค่อย generate
+    const handlePreview = async () => {
         if (!reportData) return;
-        const url = generatePreviewHtmlUrl(reportData);
-        window.open(url, "_blank", "noopener,noreferrer");
-        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        toast.info("ກຳລັງກຽມຂໍ້ມູນສຳລັບສະແດງຕົວຢ່າງ (ອາດໃຊ້ເວລາໜ້ອຍໜຶ່ງ)...");
+        try {
+            // ✅ 2. ใช้งาน Batch Fetch (ดึงทีละ 100 แถว) แทน pageSize: 9999
+            const allData = await fetchAllReportPagesForPDF(reportData.report_info, 100);
+
+            const url = generatePreviewHtmlUrl(allData);
+            window.open(url, "_blank", "noopener,noreferrer");
+            setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        } catch {
+            toast.error("ເກີດຂໍ້ຜິດພາດໃນການກຽມຂໍ້ມູນ");
+        }
     };
 
     const handleDownloadPdf = async () => {
         if (!reportData) return;
         setIsDownloading(true);
-        toast.info("ກຳລັງສ້າງເອກະສານ PDF ກະລຸນາລໍຖ້າ...");
+        toast.info("ກຳລັງດຶງຂໍ້ມູນທັງໝົດເພື່ອສ້າງ PDF...");
         try {
-            await downloadReportPDF(reportData);
+            // ✅ 3. ใช้งาน Batch Fetch เช่นเดียวกัน
+            const allData = await fetchAllReportPagesForPDF(reportData.report_info, 100);
+
+            await downloadReportPDF(allData);
             toast.success("Print PDF ສຳເລັດແລ້ວ!");
-        } catch (error) {
-            console.error("PDF generation failed:", error);
+        } catch {
             toast.error("ເກີດຂໍ້ຜິດພາດໃນການສ້າງ PDF");
         } finally {
             setIsDownloading(false);
@@ -85,7 +105,9 @@ export function TrainingReport() {
                         <FileText size={24} />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900 tracking-tight">ລາຍງານການຝຶກອົບຮົມ</h2>
+                        <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+                            ລາຍງານການຝຶກອົບຮົມ
+                        </h2>
                         <p className="text-sm text-gray-500">Training Summary Report</p>
                     </div>
                 </div>
@@ -155,14 +177,12 @@ export function TrainingReport() {
 
             {/* Table */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex-1 overflow-hidden flex flex-col">
-                <div className="overflow-x-auto p-1">
+                <div className="overflow-x-auto flex-1">
                     <Table className="min-w-[1200px]">
                         <TableHeader className="bg-gray-50/80">
-                            {/* Row 1: Group headers */}
                             <TableRow className="border-b border-gray-200 text-xs">
                                 <TableHead rowSpan={3} className="text-center w-10 border-r align-middle">ລ/ດ</TableHead>
                                 <TableHead rowSpan={3} className="border-r w-44 align-middle">ຫົວຂໍ້ຝຶກອົບຮົມ</TableHead>
-                                {/* ✅ ຈຳນວນຜູ້ເຂົ້າຝຶກ: 2 ກຸ່ມ x (ຊາຍ, ຍິງ, ລວມ) + ລວມທັງໝົດ */}
                                 <TableHead colSpan={7} className="text-center border-r">ຈຳນວນຜູ້ເຂົ້າຝຶກ</TableHead>
                                 <TableHead colSpan={2} className="text-center border-r">ໄລຍະເວລາ</TableHead>
                                 <TableHead rowSpan={3} className="text-center border-r w-12 align-middle">ມື້</TableHead>
@@ -172,7 +192,6 @@ export function TrainingReport() {
                                 <TableHead rowSpan={3} className="text-right border-r w-24 align-middle">ງົບປະມານ<br />(ກີບ)</TableHead>
                                 <TableHead rowSpan={3} className="border-r w-14 align-middle">ໝາຍເຫດ</TableHead>
                             </TableRow>
-                            {/* Row 2: Sub-group headers */}
                             <TableRow className="border-b border-gray-200 text-xs bg-gray-50/50">
                                 <TableHead colSpan={3} className="text-center border-r font-normal text-blue-700">ເຕັກນິກ</TableHead>
                                 <TableHead colSpan={3} className="text-center border-r font-normal text-green-700">ບໍລິຫານ</TableHead>
@@ -182,13 +201,10 @@ export function TrainingReport() {
                                 <TableHead rowSpan={2} className="text-center border-r font-normal w-12 align-middle">ໃນ</TableHead>
                                 <TableHead rowSpan={2} className="text-center border-r font-normal w-12 align-middle">ນອກ</TableHead>
                             </TableRow>
-                            {/* Row 3: ຊາຍ / ຍິງ / ລວມ */}
                             <TableRow className="border-b border-gray-200 text-[10px] bg-gray-50/30">
-                                {/* ເຕັກນິກ */}
                                 <TableHead className="text-center border-r font-normal w-10 text-blue-600">ຊາຍ</TableHead>
                                 <TableHead className="text-center border-r font-normal w-10 text-pink-500">ຍິງ</TableHead>
                                 <TableHead className="text-center border-r font-normal w-10">ລວມ</TableHead>
-                                {/* ບໍລິຫານ */}
                                 <TableHead className="text-center border-r font-normal w-10 text-blue-600">ຊາຍ</TableHead>
                                 <TableHead className="text-center border-r font-normal w-10 text-pink-500">ຍິງ</TableHead>
                                 <TableHead className="text-center border-r font-normal w-10">ລວມ</TableHead>
@@ -217,21 +233,16 @@ export function TrainingReport() {
                                             <TableCell className="font-medium border-r truncate max-w-[180px]" title={row.course_title}>
                                                 {row.course_title}
                                             </TableCell>
-                                            {/* ✅ ເຕັກນິກ */}
                                             <TableCell className="text-center border-r text-blue-700">{row.attendees.technical.male || "-"}</TableCell>
                                             <TableCell className="text-center border-r text-pink-500">{row.attendees.technical.female || "-"}</TableCell>
                                             <TableCell className="text-center border-r font-medium">{row.attendees.technical.total || "-"}</TableCell>
-                                            {/* ✅ ບໍລິຫານ */}
                                             <TableCell className="text-center border-r text-blue-700">{row.attendees.administrative.male || "-"}</TableCell>
                                             <TableCell className="text-center border-r text-pink-500">{row.attendees.administrative.female || "-"}</TableCell>
                                             <TableCell className="text-center border-r font-medium">{row.attendees.administrative.total || "-"}</TableCell>
-                                            {/* ✅ ລວມທັງໝົດ */}
                                             <TableCell className="text-center border-r font-bold text-indigo-700">{row.attendees.total.total || "-"}</TableCell>
-                                            {/* ໄລຍະເວລາ */}
                                             <TableCell className="text-center border-r">{format(new Date(row.duration.start_date), "dd/MM")}</TableCell>
                                             <TableCell className="text-center border-r">{format(new Date(row.duration.end_date), "dd/MM")}</TableCell>
                                             <TableCell className="text-center border-r">{row.duration.total_days}</TableCell>
-                                            {/* ສະຖານທີ່ */}
                                             <TableCell className="text-center border-r">{row.location.is_domestic ? "✓" : ""}</TableCell>
                                             <TableCell className="text-center border-r">{row.location.is_international ? "✓" : ""}</TableCell>
                                             <TableCell className="border-r truncate max-w-[110px]" title={row.institution}>{row.institution}</TableCell>
@@ -241,21 +252,18 @@ export function TrainingReport() {
                                         </TableRow>
                                     ))}
 
-                                    {/* Summary Row */}
+                                    {/* Summary — แสดงเฉพาะหน้าสุดท้ายหรือทุกหน้า */}
                                     {reportData?.summary && (
                                         <TableRow className="bg-indigo-50 font-semibold border-t-2 border-indigo-200 text-xs">
                                             <TableCell colSpan={2} className="text-right border-r text-indigo-900 pr-2">
                                                 ລວມທັງໝົດ ({reportData.summary.total_courses} ຫຼັກສູດ)
                                             </TableCell>
-                                            {/* ເຕັກນິກ */}
                                             <TableCell className="text-center border-r text-blue-700">{reportData.summary.total_technical_male}</TableCell>
                                             <TableCell className="text-center border-r text-pink-500">{reportData.summary.total_technical_female}</TableCell>
                                             <TableCell className="text-center border-r">{reportData.summary.total_technical}</TableCell>
-                                            {/* ບໍລິຫານ */}
                                             <TableCell className="text-center border-r text-blue-700">{reportData.summary.total_administrative_male}</TableCell>
                                             <TableCell className="text-center border-r text-pink-500">{reportData.summary.total_administrative_female}</TableCell>
                                             <TableCell className="text-center border-r">{reportData.summary.total_administrative}</TableCell>
-                                            {/* ລວມ */}
                                             <TableCell className="text-center border-r font-bold text-indigo-700">{reportData.summary.total_attendees}</TableCell>
                                             <TableCell colSpan={2} className="border-r" />
                                             <TableCell className="text-center border-r text-indigo-700">{reportData.summary.total_days}</TableCell>
@@ -274,6 +282,15 @@ export function TrainingReport() {
                         </TableBody>
                     </Table>
                 </div>
+
+                {/* ✅ Pagination */}
+                {reportData?.pagination && (
+                    <ReportPagination
+                        pagination={reportData.pagination}
+                        onPageChange={(p) => setPage(p)}
+                        isLoading={isLoading}
+                    />
+                )}
             </div>
         </div>
     );
