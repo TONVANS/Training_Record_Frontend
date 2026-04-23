@@ -32,7 +32,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
             <div className="flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
               <div className="w-16 h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center p-2.5 border-2 border-white/20">
                 <Image 
-                  src="/images/logo/logo.png" 
+                  src="/app1/images/logo/logo.png" 
                   alt="Lao Training Sys Logo" 
                   width={64} 
                   height={64} 
@@ -90,7 +90,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
            <div className="lg:hidden flex justify-center mb-8">
               <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-xl shadow-blue-900/10 p-3 border border-gray-100">
                 <Image 
-                  src="/images/logo/logo.png" 
+                  src="/app1/images/logo/logo.png" 
                   alt="Lao Training Sys Logo" 
                   width={80} 
                   height={80} 

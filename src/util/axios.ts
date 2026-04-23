@@ -69,7 +69,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       if (typeof window !== "undefined") {
         localStorage.removeItem("auth-storage");
-        window.location.href = "/login";
+        // แก้ไขให้ redirect ไปยัง path ที่มี basePath (/app1) เพื่อป้องกัน 404
+        window.location.href = "/app1/login";
       }
     }
     

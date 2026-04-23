@@ -88,7 +88,7 @@ export function Sidebar({ isOpen, onClose, currentPath, isCollapsed, toggleColla
                         <div className="flex items-center overflow-hidden whitespace-nowrap">
                             <div className="w-10 h-10 shrink-0 bg-white rounded-xl flex items-center justify-center mr-3 shadow-md border border-white/20 p-1">
                                 <Image
-                                    src="/images/logo/logo.png"
+                                    src="/app1/images/logo/logo.png"
                                     alt="Logo"
                                     width={32}
                                     height={32}

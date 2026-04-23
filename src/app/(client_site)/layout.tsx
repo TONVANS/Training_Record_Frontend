@@ -26,7 +26,7 @@ export default function ClientSiteLayout({ children }: { children: React.ReactNo
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 shrink-0 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center justify-center p-1.5 overflow-hidden">
               <Image 
-                src="/images/logo/logo.png" 
+                src="/app1/images/logo/logo.png" 
                 alt="Lao Training Logo" 
                 width={32} 
                 height={32} 
@@ -68,12 +68,11 @@ export default function ClientSiteLayout({ children }: { children: React.ReactNo
         <div className="flex items-center gap-2.5">
            <div className="w-9 h-9 shrink-0 rounded-lg bg-white border border-gray-100 shadow-sm flex items-center justify-center p-1 overflow-hidden">
               <Image 
-                src="/images/logo/logo.png" 
-                alt="Lao Training Logo" 
-                width={28} 
-                height={28} 
-                className="object-contain w-full h-full"
-                priority
+                src="/app1/images/logo/logo.png" 
+                alt="Logo" 
+                width={40} 
+                height={40} 
+                className="object-contain opacity-90 group-hover:opacity-100 transition-opacity"
               />
            </div>
            <div className="font-extrabold text-lg text-gray-900 tracking-tight">

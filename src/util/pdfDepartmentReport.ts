@@ -267,7 +267,7 @@ export const generateDepartmentReportHTML = (
       ພະແນກວາງແຜນ ແລະ ພັດທະນາບຸກຄະລາກອນ
     </div>
     <div class="header-center">
-      <img src="${baseUrl}/images/logo/logo.png" alt="Logo"
+      <img src="${baseUrl}/app1/images/logo/logo.png" alt="Logo"
            class="header-logo" onerror="this.style.display='none'" />
     </div>
     <div class="header-right">
