@@ -1,11 +1,11 @@
 // src/app/(site)/participant_lists/[id]/page.tsx
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   ArrowLeft, Mail, Phone, Building2, Calendar, Award, Search, Download, CheckCircle2, XCircle, Clock3,
   Circle, User, Briefcase, UploadCloud, MapPin, MonitorPlay,
-  BookOpen
+  BookOpen, Loader2, FileText
 } from "lucide-react";
 
 import { useParticipantListStore } from "@/store/participantListStore";
@@ -21,6 +21,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import api from "@/util/axios";
+import { toast } from "sonner";
 
 // --- Helper Functions ---
 const getStatusBadgeVariant = (status: string) => {
@@ -55,7 +57,7 @@ const getStatusIcon = (status: string) => {
 export default function ParticipantDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const employeeCode = params?.id as string; // Route parameter acts as employee_code
+  const employeeCode = params?.id as string;
 
   // Store
   const { selectedEmployeeHistory, isLoading, fetchEmployeeHistory } = useParticipantListStore();
@@ -67,6 +69,12 @@ export default function ParticipantDetailPage() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<EnrolledCourseDetail | null>(null);
 
+  // Upload states
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadNote, setUploadNote] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   // Fetch data on mount
   useEffect(() => {
     if (employeeCode) {
@@ -75,7 +83,6 @@ export default function ParticipantDetailPage() {
   }, [employeeCode, fetchEmployeeHistory]);
 
   const employee = selectedEmployeeHistory?.employee;
-  // ໃຊ້ useMemo ເພື່ອບໍ່ໃຫ້ມັນສ້າງ Array ໃໝ່ທຸກຄັ້ງທີ່ Render
   const courses = useMemo(() => selectedEmployeeHistory?.courses || [], [selectedEmployeeHistory?.courses]);
 
   // Filter Logic
@@ -131,7 +138,56 @@ export default function ParticipantDetailPage() {
 
   const handleOpenUpload = (item: EnrolledCourseDetail) => {
     setSelectedItem(item);
+    setSelectedFile(null);
+    setUploadNote("");
     setIsUploadOpen(true);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("ຂະໜາດໄຟລ໌ເກີນ 10MB");
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleUploadCertificate = async () => {
+    if (!selectedFile || !selectedItem) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      await api.post(
+        `/enrollments/${selectedItem.enrollment_id}/certificate`,
+        formData,
+        { 
+          headers: { "Content-Type": "multipart/form-data" },
+          timeout: 300000 // 5 minutes timeout for large file uploads
+        }
+      );
+
+      toast.success("ອັບໂຫຼດໃບຢັ້ງຢືນສຳເລັດແລ້ວ!");
+      setIsUploadOpen(false);
+      setSelectedFile(null);
+      setUploadNote("");
+
+      // Refresh data
+      if (employeeCode) {
+        fetchEmployeeHistory(Number(employeeCode));
+      }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "ການອັບໂຫຼດລົ້ມເຫລວ";
+      toast.error(msg);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -295,15 +351,24 @@ export default function ParticipantDetailPage() {
                       </TableCell>
 
                       <TableCell className="align-middle text-center py-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-9 w-full gap-2 text-gray-600 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-colors"
-                          onClick={() => handleOpenUpload(item)}
-                        >
-                          <UploadCloud size={16} />
-                          <span className="hidden sm:inline">ອັບໂຫລດ</span>
-                        </Button>
+                        <div className="flex flex-col gap-1.5">
+                          {item.certificate_url && (
+                            <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200 mb-1">
+                              <CheckCircle2 size={12} className="mr-1" /> ມີໃບຢັ້ງຢືນ
+                            </Badge>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 w-full gap-2 text-gray-600 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                            onClick={() => handleOpenUpload(item)}
+                          >
+                            <UploadCloud size={16} />
+                            <span className="hidden sm:inline">
+                              {item.certificate_url ? "ອັບໂຫຼດແທນ" : "ອັບໂຫຼດ"}
+                            </span>
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -324,7 +389,13 @@ export default function ParticipantDetailPage() {
       </div>
 
       {/* Upload Dialog Component */}
-      <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+      <Dialog open={isUploadOpen} onOpenChange={(open) => {
+        setIsUploadOpen(open);
+        if (!open) {
+          setSelectedFile(null);
+          setUploadNote("");
+        }
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl">ອັບໂຫລດໃບຢັ້ງຢືນ</DialogTitle>
@@ -335,27 +406,73 @@ export default function ParticipantDetailPage() {
 
           <div className="grid gap-5 py-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="file" className="font-medium">ເລືອກຟາຍເອກະສານ</Label>
-              <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-50 hover:border-blue-400 transition-all duration-200 group">
-                <div className="p-3 bg-white rounded-full shadow-sm mb-3 group-hover:scale-110 transition-transform">
-                  <UploadCloud className="h-6 w-6 text-blue-500" />
-                </div>
-                <p className="text-sm font-semibold text-gray-700">ຄລິກເພື່ອອັບໂຫລດ ຫຼື ລາກຟາຍມາວາງ</p>
-                <p className="text-xs text-gray-400 mt-1">ຮອງຮັບ PDF, PNG, JPG ຂະໜາດບໍ່ເກີນ 10MB</p>
-                <Input id="file" type="file" className="hidden" />
+              <Label htmlFor="cert-file" className="font-medium">ເລືອກຟາຍເອກະສານ</Label>
+              <div
+                className="border-2 border-dashed border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-50 hover:border-blue-400 transition-all duration-200 group"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {selectedFile ? (
+                  <>
+                    <div className="p-3 bg-emerald-50 rounded-full shadow-sm mb-3">
+                      <FileText className="h-6 w-6 text-emerald-600" />
+                    </div>
+                    <p className="text-sm font-semibold text-gray-700">{selectedFile.name}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB — ຄລິກເພື່ອປ່ຽນໄຟລ໌
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="p-3 bg-white rounded-full shadow-sm mb-3 group-hover:scale-110 transition-transform">
+                      <UploadCloud className="h-6 w-6 text-blue-500" />
+                    </div>
+                    <p className="text-sm font-semibold text-gray-700">ຄລິກເພື່ອອັບໂຫລດ ຫຼື ລາກຟາຍມາວາງ</p>
+                    <p className="text-xs text-gray-400 mt-1">ຮອງຮັບ PDF, PNG, JPG ຂະໜາດບໍ່ເກີນ 10MB</p>
+                  </>
+                )}
+                <input
+                  ref={fileInputRef}
+                  id="cert-file"
+                  type="file"
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
               </div>
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="desc" className="font-medium">ໝາຍເຫດ (ທາງເລືອກ)</Label>
-              <Input id="desc" placeholder="ເພີ່ມລາຍລະອຽດເພີ່ມເຕີມເຊັ່ນ: ເລກທີໃບປະກາດ..." className="bg-gray-50" />
+              <Input
+                id="desc"
+                placeholder="ເພີ່ມລາຍລະອຽດເພີ່ມເຕີມເຊັ່ນ: ເລກທີໃບປະກາດ..."
+                className="bg-gray-50"
+                value={uploadNote}
+                onChange={(e) => setUploadNote(e.target.value)}
+              />
             </div>
           </div>
 
           <DialogFooter className="sm:justify-end gap-2">
-            <Button variant="ghost" onClick={() => setIsUploadOpen(false)} className="hover:bg-gray-100">ຍົກເລີກ</Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-md">
-              <UploadCloud size={16} /> ບັນທຶກເອກະສານ
+            <Button
+              variant="ghost"
+              onClick={() => setIsUploadOpen(false)}
+              className="hover:bg-gray-100"
+              disabled={isUploading}
+            >
+              ຍົກເລີກ
+            </Button>
+            <Button
+              onClick={handleUploadCertificate}
+              disabled={!selectedFile || isUploading}
+              className="bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-md"
+            >
+              {isUploading ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <UploadCloud size={16} />
+              )}
+              {isUploading ? "ກຳລັງອັບໂຫຼດ..." : "ບັນທຶກເອກະສານ"}
             </Button>
           </DialogFooter>
         </DialogContent>

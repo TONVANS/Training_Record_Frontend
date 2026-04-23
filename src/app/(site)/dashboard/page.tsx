@@ -55,7 +55,7 @@ export default function DashboardPage() {
                 <div className="absolute top-[-20%] right-[-5%] w-[400px] h-[400px] bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
                 <div className="absolute bottom-[-20%] left-[10%] w-[300px] h-[300px] bg-[#ffb13b]/20 rounded-full blur-3xl pointer-events-none"></div>
 
-                <div className="relative z-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div>
                         <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight drop-shadow-sm mb-2">
                             ພາບລວມລະບົບ <span className="text-[#ffb13b]">(Dashboard)</span>

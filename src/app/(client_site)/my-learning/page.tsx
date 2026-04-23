@@ -58,7 +58,7 @@ export default function MyLearningPage() {
       const disposition = response.headers.get("content-disposition");
       let filename = url.split('/').pop()?.split('?')[0] || "document";
       if (disposition && disposition.indexOf("filename=") !== -1) {
-        const filenameMatch = disposition.match(/filename="?(.+)"?/);
+        const filenameMatch = disposition.match(/filename="?([^";]+)"?/);
         if (filenameMatch && filenameMatch.length === 2) {
           filename = filenameMatch[1];
         }

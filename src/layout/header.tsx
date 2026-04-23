@@ -73,7 +73,7 @@ export function Header({ onMenuClick, currentPath }: HeaderProps) {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200/80 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+    <header className="h-16 bg-white border-b border-gray-200/80 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-15 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
       <div className="flex items-center gap-4">
         {/* Mobile Menu Button */}
         <button

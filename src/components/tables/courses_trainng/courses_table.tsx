@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Plus, MapPin, Edit, Trash2, Menu, Loader2, Eye,
   Search, Users, X, FilterX, FileText, Link as LinkIcon,
@@ -142,6 +142,7 @@ export function Courses_Table() {
   const [formData, setFormData] = useState<CourseFormData>(defaultForm);
 
   // Participant states
+  const participantInputRef = useRef<HTMLInputElement>(null);
   const [employeeIdSearch, setEmployeeIdSearch] = useState("");
   const [foundEmployee, setFoundEmployee] = useState<{ id: number; name: string; code: string } | null>(null);
   const [addedParticipants, setAddedParticipants] = useState<AddedParticipant[]>([]);
@@ -312,10 +313,13 @@ export function Courses_Table() {
   const handleAddParticipant = () => {
     if (!foundEmployee) return;
     if (addedParticipants.find(p => p.id === foundEmployee.id)) {
-      toast.error("ພະນັກງານນີ້ຖືກເພີ່ມເຂົ້າໃນລາຍການແລ້ວ"); return;
+      toast.error("ພະນັກງານນີ້ຖືກເພີ່ມເຂົ້າໃນລາຍການແລ້ວ"); 
+      setTimeout(() => participantInputRef.current?.focus(), 10);
+      return;
     }
     setAddedParticipants(prev => [...prev, { id: foundEmployee.id, name: foundEmployee.name, code: foundEmployee.code }]);
     setEmployeeIdSearch(""); setFoundEmployee(null); setSearchError(null);
+    setTimeout(() => participantInputRef.current?.focus(), 10);
   };
 
   const handleSubmitParticipants = async () => {
@@ -411,6 +415,7 @@ export function Courses_Table() {
         headers: {
           "Content-Type": "multipart/form-data",
         },
+        timeout: 300000 // 5 minutes timeout for large file uploads
       });
       toast.success("ເພີ່ມເອກະສານສຳເລັດແລ້ວ");
       setIsMaterialDialogOpen(false);
@@ -1105,7 +1110,7 @@ export function Courses_Table() {
                     <Label className="text-xs font-medium text-gray-600">ລະຫັດພະນັກງານ</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-                      <Input placeholder="ພິມລະຫັດ 5+ ຕົວ..." className="pl-9 h-9 bg-white text-sm"
+                      <Input ref={participantInputRef} placeholder="ພິມລະຫັດ 5+ ຕົວ..." className="pl-9 h-9 bg-white text-sm"
                         value={employeeIdSearch}
                         onChange={e => {
                           const v = e.target.value;
@@ -1113,7 +1118,7 @@ export function Courses_Table() {
                           if (v.length >= 5) handleSearchEmployee(v); else setFoundEmployee(null);
                         }}
                         onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddParticipant(); } }}
-                        disabled={isSearching || isSubmitting} />
+                        disabled={isSubmitting} />
                       {isSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-emerald-500 animate-spin" />}
                     </div>
                   </div>

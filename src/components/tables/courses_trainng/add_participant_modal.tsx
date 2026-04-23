@@ -1,6 +1,6 @@
 // src/components/tables/courses_trainng/add_participant_modal.tsx
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Plus, Loader2, AlertCircle, CheckCircle, Trash2, Search, Users, X, Edit, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +49,7 @@ export function AddParticipantModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Load existing participants when modal opens
   useEffect(() => {
@@ -119,12 +120,14 @@ export function AddParticipantModal({
 
     if (selectedParticipants.some((p) => p.id === foundEmployee.id)) {
       toast.error("ພະນັກງານນີ້ຖືກເພີ່ມເຂົ້າໃນລາຍການແລ້ວ");
+      setTimeout(() => inputRef.current?.focus(), 10);
       return;
     }
 
     setSelectedParticipants([...selectedParticipants, foundEmployee]);
     setEmployeeCodeSearch("");
     setFoundEmployee(null);
+    setTimeout(() => inputRef.current?.focus(), 10);
   };
 
   const removeParticipant = (employeeId: number) => {
@@ -212,11 +215,12 @@ export function AddParticipantModal({
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
+                      ref={inputRef}
                       placeholder="ພິມລະຫັດ 5+ ຕົວ..."
                       value={employeeCodeSearch}
                       onChange={(e) => handleSearchEmployee(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      disabled={isSearching || isSubmitting}
+                      disabled={isSubmitting}
                       className="pl-10 h-10 bg-white border-emerald-100 focus-visible:ring-emerald-500"
                     />
                     {isSearching && (

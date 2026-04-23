@@ -18,7 +18,7 @@ const getBaseURL = () => {
   }
   // ฝั่ง Server (SSR/Docker): ต้องวิ่งหาชื่อ Service ใน Docker network 
   // หรือใช้ Internal URL ที่เข้าถึงได้โดยตรง
-  return process.env.INTERNAL_API_URL;
+  return process.env.INTERNAL_API_URL || process.env.BACKEND_URL;
 };
 
 const api = axios.create({

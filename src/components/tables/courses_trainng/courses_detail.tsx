@@ -26,6 +26,7 @@ import {
     CheckCircle2,
     Globe,
     History,
+    UserPlus,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -165,7 +166,7 @@ export default function CourseDetail() {
             const disposition = response.headers.get("content-disposition");
             let filename = downloadUrl.split('/').pop()?.split('?')[0] || "document";
             if (disposition && disposition.indexOf("filename=") !== -1) {
-                const filenameMatch = disposition.match(/filename="?(.+)"?/);
+                const filenameMatch = disposition.match(/filename="?([^";]+)"?/);
                 if (filenameMatch && filenameMatch.length === 2) filename = filenameMatch[1];
             }
             link.download = filename;
@@ -361,7 +362,7 @@ export default function CourseDetail() {
                                 size="sm"
                                 className="bg-emerald-600 hover:bg-emerald-700 text-white h-9"
                             >
-                                <Edit className="w-4 h-4 mr-2" />
+                                <UserPlus className="w-4 h-4 mr-2" />
                                 ຈັດການຜູ້ເຂົ້າຮ່ວມ
                             </Button>
                         </CardHeader>
