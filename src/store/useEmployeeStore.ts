@@ -62,7 +62,7 @@ export interface PortalCourse {
   institution: string | null;
   organization: string | null;
   materials: Material[];
-  enrollments?: { id: number }[];
+  enrollments?: { id: number; status: string }[];
 }
 
 export interface PortalEnrollment {
@@ -119,11 +119,13 @@ interface EmployeeStoreState {
   enrollments: PortalEnrollment[];
   certificates: PortalCertificate[]; // ✅ List ທັງໝົດ
   currentCertificate: PortalCertificate | null; // ✅ ສຳລັບ enrollment ທີ່ select
+  currentCourse: PortalCourse | null;
   isLoading: boolean;
   error: string | null;
 
   fetchProfile: () => Promise<void>;
   fetchAvailableCourses: () => Promise<void>;
+  fetchCourseById: (id: number) => Promise<void>;
   fetchMyEnrollments: () => Promise<void>;
   fetchMyCertificates: () => Promise<void>; // ✅ ດຶງທັງໝົດ
   fetchCertificate: (enrollmentId: number) => Promise<void>; // ✅ ດຶງຕາມ enrollment
@@ -136,6 +138,7 @@ export const useEmployeeStore = create<EmployeeStoreState>((set) => ({
   enrollments: [],
   certificates: [],
   currentCertificate: null,
+  currentCourse: null,
   isLoading: false,
   error: null,
 
@@ -167,6 +170,22 @@ export const useEmployeeStore = create<EmployeeStoreState>((set) => ({
       const errorMessage =
         axiosError.response?.data?.message ||
         "Failed to fetch available courses";
+      set({ error: errorMessage, isLoading: false });
+      toast.error(errorMessage);
+    }
+  },
+
+  fetchCourseById: async (id: number) => {
+    set({ isLoading: true, error: null, currentCourse: null });
+    try {
+      const response = await api.get<PortalCourse>(
+        `/employee-portal/courses/${id}`,
+      );
+      set({ currentCourse: response.data, isLoading: false });
+    } catch (error: unknown) {
+      const axiosError = error as AxiosError<ApiErrorResponse>;
+      const errorMessage =
+        axiosError.response?.data?.message || "Failed to fetch course details";
       set({ error: errorMessage, isLoading: false });
       toast.error(errorMessage);
     }

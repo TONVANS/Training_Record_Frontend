@@ -60,9 +60,9 @@ export default function CatalogPage() {
             onClick={() => router.push(`/catalog/${course.id}`)}
           >
             {/* 📌 Card Image Placeholder / Accent Banner */}
-            <div className="h-28 bg-gradient-to-br from-blue-50 to-indigo-50 relative overflow-hidden flex items-center justify-center">
+            <div className="h-28 bg-linear-to-br from-blue-50 to-indigo-50 relative overflow-hidden flex items-center justify-center">
                 <Library size={40} className="text-blue-200/50 group-hover:scale-110 transition-transform duration-500" />
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#1275e2] to-[#0a468c]" />
+                <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-[#1275e2] to-[#0a468c]" />
             </div>
 
             <div className="p-6 flex-1 flex flex-col">
