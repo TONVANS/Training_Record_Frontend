@@ -339,7 +339,7 @@ export default function CourseDetail() {
                                         <Building2 className="w-4 h-4 text-slate-600" />
                                     </div>
                                     <div>
-                                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">ໜ່ວຍງານ / ອົງການຈັດຝຶກ</p>
+                                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">ພາກສ່ວນຈັດຕັ້ງຝຶກອົບຮົມ</p>
                                         <p className="text-sm font-semibold text-gray-700">{course.organization || "—"}</p>
                                     </div>
                                 </div>

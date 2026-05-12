@@ -1057,7 +1057,7 @@ export function Courses_Table() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-1.5">
-                  <Label className="text-sm">ໜ່ວຍງານ</Label>
+                  <Label className="text-sm">ພາກສ່ວນຈັດຕັ້ງ</Label>
                   <Input placeholder="ພາກສ່ວນຈັດຕັ້ງ" value={formData.organization || ""} onChange={e => handleFormChange("organization", e.target.value)} />
                 </div>
                 <div className="grid gap-1.5">
