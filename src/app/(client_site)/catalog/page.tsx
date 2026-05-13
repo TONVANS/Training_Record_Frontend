@@ -1,148 +1,274 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useEmployeeStore } from "@/store/useEmployeeStore";
-import { format } from "date-fns";
-import { MapPin, Calendar, Monitor, Users, Library, Search, ChevronRight } from "lucide-react";
+import { useCategoryStore } from "@/store/categoryStore";
+import { Library, Search, Check, ChevronsUpDown } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { LoadingState } from "@/components/client/LoadingState";
+import { EmptyState } from "@/components/client/EmptyState";
+import { CatalogHeader } from "@/components/client/catalog/CatalogHeader";
+import { CourseCard } from "@/components/client/catalog/CourseCard";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Pagination, PaginationContent, PaginationItem,
+  PaginationLink, PaginationNext, PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
+import { cn } from "@/lib/utils";
 
 export default function CatalogPage() {
-  const { availableCourses, isLoading, fetchAvailableCourses } = useEmployeeStore();
+  const { availableCourses, coursesMeta, isLoading, fetchAvailableCourses } = useEmployeeStore();
+  const { categories, fetchCategories } = useCategoryStore();
+  
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [format, setFormat] = useState("ALL");
+  const [locationType, setLocationType] = useState("ALL");
+  const [categoryId, setCategoryId] = useState("ALL");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  
+  const [openFilterCategory, setOpenFilterCategory] = useState(false);
+
   const router = useRouter();
+  
+  const totalPages = coursesMeta ? Math.ceil(coursesMeta.total / coursesMeta.limit) : 1;
+
+  const getPageNumbers = (): (number | "...")[] => {
+    if (!coursesMeta) return [];
+    const pages: (number | "...")[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (page <= 3) {
+        pages.push(1, 2, 3, 4, "...", totalPages);
+      } else if (page >= totalPages - 2) {
+        pages.push(1, "...", totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, "...", page - 1, page, page + 1, "...", totalPages);
+      }
+    }
+    return pages;
+  };
 
   useEffect(() => {
-    fetchAvailableCourses();
-  }, [fetchAvailableCourses]);
+    fetchCategories();
+  }, [fetchCategories]);
 
-  const filtered = availableCourses.filter((c) =>
-    c.title.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    fetchAvailableCourses({
+      page,
+      limit: 6,
+      title: debouncedSearch || undefined,
+      format: format !== "ALL" ? format : undefined,
+      location_type: locationType !== "ALL" ? locationType : undefined,
+      category_id: categoryId !== "ALL" ? Number(categoryId) : undefined,
+      start_date: startDate ? new Date(startDate).toISOString() : undefined,
+      end_date: endDate ? new Date(endDate).toISOString() : undefined,
+    });
+  }, [debouncedSearch, page, format, locationType, categoryId, startDate, endDate, fetchAvailableCourses]);
 
   if (isLoading && availableCourses.length === 0) {
-    return (
-      <div className="flex flex-col justify-center items-center h-[60vh] gap-4">
-        <div className="w-12 h-12 border-4 border-[#1275e2]/20 border-t-[#1275e2] rounded-full animate-spin" />
-        <span className="text-sm font-medium text-gray-500 animate-pulse">ກຳລັງໂຫຼດຫຼັກສູດ...</span>
-      </div>
-    );
+    return <LoadingState message="ກຳລັງໂຫຼດຫຼັກສູດ..." />;
   }
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-500">
       {/* ── Header & Search ── */}
-      <div className="bg-white rounded-[2rem] p-6 md:p-8 shadow-[0_4px_20px_rgb(0,0,0,0.02)] border border-gray-100/80 flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">ຫຼັກສູດທັງໝົດ</h1>
-          <p className="text-sm font-medium text-gray-400 mt-1.5">
-            ຄົ້ນຫາ ແລະ ລົງທະບຽນວິຊາທີ່ທ່ານສົນໃຈເພື່ອພັດທະນາທັກສະ
-          </p>
+      <CatalogHeader search={search} onSearchChange={setSearch} />
+
+      {/* ── Filters ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-gray-500">ຮູບແບບການຮຽນ</Label>
+          <Select value={format} onValueChange={(v) => { setFormat(v); setPage(1); }}>
+            <SelectTrigger className="w-full bg-gray-50 border-gray-200 h-10">
+              <SelectValue placeholder="ທັງໝົດ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">ທັງໝົດ</SelectItem>
+              <SelectItem value="ONLINE">ອອນລາຍ (ONLINE)</SelectItem>
+              <SelectItem value="ONSITE">ຮຽນຢູ່ສະຖານທີ່ (ONSITE)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-gray-500">ສະຖານທີ່</Label>
+          <Select value={locationType} onValueChange={(v) => { setLocationType(v); setPage(1); }}>
+            <SelectTrigger className="w-full bg-gray-50 border-gray-200 h-10">
+              <SelectValue placeholder="ທັງໝົດ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">ທັງໝົດ</SelectItem>
+              <SelectItem value="DOMESTIC">ພາຍໃນປະເທດ (DOMESTIC)</SelectItem>
+              <SelectItem value="INTERNATIONAL">ຕ່າງປະເທດ (INTERNATIONAL)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="relative w-full md:w-80 shrink-0 group">
-          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#1275e2] transition-colors" />
-          <input
-            type="text"
-            placeholder="ຄົ້ນຫາຊື່ຫຼັກສູດ..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1275e2]/20 focus:border-[#1275e2] transition-all"
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-gray-500">ໝວດໝູ່</Label>
+          <Popover open={openFilterCategory} onOpenChange={setOpenFilterCategory}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={openFilterCategory}
+                className="w-full justify-between bg-gray-50 border-gray-200 font-normal h-10 text-sm hover:bg-gray-50"
+              >
+                <span className="truncate">
+                  {categoryId !== "ALL"
+                    ? categories.find((cat) => String(cat.id) === categoryId)?.name
+                    : "ທັງໝົດ"}
+                </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0 w-full" align="start">
+              <Command>
+                <CommandInput placeholder="ຄົ້ນຫາໝວດໝູ່..." />
+                <CommandList>
+                  <CommandEmpty>ບໍ່ພົບໝວດໝູ່ທີ່ຄົ້ນຫາ.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="ALL"
+                      onSelect={() => {
+                        setCategoryId("ALL");
+                        setPage(1);
+                        setOpenFilterCategory(false);
+                      }}
+                    >
+                      <Check className={cn("mr-2 h-4 w-4", categoryId === "ALL" ? "opacity-100" : "opacity-0")} />
+                      ທັງໝົດ
+                    </CommandItem>
+                    {categories.map((cat) => (
+                      <CommandItem
+                        key={cat.id}
+                        value={cat.name}
+                        onSelect={() => {
+                          setCategoryId(String(cat.id));
+                          setPage(1);
+                          setOpenFilterCategory(false);
+                        }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", categoryId === String(cat.id) ? "opacity-100" : "opacity-0")} />
+                        {cat.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-gray-500">ເລີ່ມຕົ້ນວັນທີ</Label>
+          <Input
+            type="date"
+            value={startDate}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setPage(1);
+            }}
+            className="w-full bg-gray-50 border-gray-200 h-10"
+          />
+        </div>
+        
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-gray-500">ສິ້ນສຸດວັນທີ</Label>
+          <Input
+            type="date"
+            value={endDate}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setPage(1);
+            }}
+            className="w-full bg-gray-50 border-gray-200 h-10"
           />
         </div>
       </div>
 
       {/* ── Courses Grid ── */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((course) => (
-          <div
-            key={course.id}
-            className="group bg-white rounded-[2rem] overflow-hidden border border-gray-100/80 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-xl hover:shadow-[#1275e2]/10 hover:-translate-y-1 transition-all duration-300 flex flex-col cursor-pointer"
-            onClick={() => router.push(`/catalog/${course.id}`)}
-          >
-            {/* 📌 Card Image Placeholder / Accent Banner */}
-            <div className="h-28 bg-linear-to-br from-blue-50 to-indigo-50 relative overflow-hidden flex items-center justify-center">
-                <Library size={40} className="text-blue-200/50 group-hover:scale-110 transition-transform duration-500" />
-                <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-[#1275e2] to-[#0a468c]" />
-            </div>
-
-            <div className="p-6 flex-1 flex flex-col">
-              {/* Badges */}
-              <div className="flex items-center gap-2 mb-4">
-                <span className="bg-[#1275e2]/10 text-[#1275e2] px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">
-                  {course.category?.name || "ທົ່ວໄປ"}
-                </span>
-                <span
-                  className={`text-[10px] px-3 py-1 rounded-lg font-bold uppercase tracking-wider ${
-                    course.format === "ONLINE"
-                      ? "bg-sky-50 text-sky-600 border border-sky-100"
-                      : "bg-orange-50 text-orange-600 border border-orange-100"
-                  }`}
-                >
-                  {course.format === "ONLINE" ? "ອອນລາຍ" : "ຕົວຈິງ"}
-                </span>
-              </div>
-
-              {/* Title & Description */}
-              <div className="mb-6 flex-1">
-                <h2 className="text-lg font-bold text-gray-900 leading-snug group-hover:text-[#1275e2] transition-colors line-clamp-2">
-                  {course.title}
-                </h2>
-                {course.description && (
-                  <p className="text-sm font-medium text-gray-500 mt-2 line-clamp-2 leading-relaxed">
-                    {course.description}
-                  </p>
-                )}
-              </div>
-
-              {/* Details List */}
-              <div className="space-y-2.5 text-xs font-medium text-gray-600 mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
-                     <Calendar size={14} className="text-[#1275e2]" />
-                  </div>
-                  <span className="truncate">
-                    {format(new Date(course.start_date), "dd MMM yyyy")} – {format(new Date(course.end_date), "dd MMM yyyy")}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${course.format === 'ONLINE' ? 'bg-sky-50 text-sky-500' : 'bg-orange-50 text-orange-500'}`}>
-                    {course.format === "ONLINE" ? <Monitor size={14} /> : <MapPin size={14} />}
-                  </div>
-                  <span className="truncate">
-                    {course.format === "ONLINE"
-                      ? course.location || "Online Meeting"
-                      : course.location_type === "INTERNATIONAL"
-                      ? course.country
-                      : course.location || "ແຈ້ງໃຫ້ຊາບພາຍຫຼັງ"}
-                  </span>
-                </div>
-              </div>
-
-              {/* View Detail Button */}
-              <button className="w-full flex items-center justify-center gap-2 bg-gray-50 hover:bg-[#1275e2] text-gray-700 hover:text-white text-sm font-bold py-3.5 rounded-xl transition-colors group-hover:shadow-md">
-                ລາຍລະອຽດ <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
+        {availableCourses.map((course) => (
+          <CourseCard 
+            key={course.id} 
+            course={course} 
+            onClick={() => router.push(`/catalog/${course.id}`)} 
+          />
         ))}
 
         {/* ── Empty State ── */}
-        {filtered.length === 0 && !isLoading && (
-          <div className="col-span-full py-20 text-center bg-white rounded-[2rem] border border-gray-100 shadow-sm">
-            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-5">
-              <Search size={32} className="text-gray-300" />
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">
-              {search ? "ບໍ່ພົບຫຼັກສູດທີ່ຄົ້ນຫາ" : "ຍັງບໍ່ມີຫຼັກສູດເປີດສອນ"}
-            </h3>
-            <p className="text-sm font-medium text-gray-500">
-              {search
-                ? "ກະລຸນາລອງໃຊ້ຄຳຄົ້ນຫາອື່ນ"
-                : "ຂະນະນີ້ຍັງບໍ່ມີວິຊາທີ່ເປີດໃຫ້ບໍລິການ ກະລຸນາກັບມາເບິ່ງໃໝ່ພາຍຫຼັງ"}
-            </p>
-          </div>
+        {availableCourses.length === 0 && !isLoading && (
+          <EmptyState
+            icon={search ? Search : Library}
+            title={search ? "ບໍ່ພົບຫຼັກສູດທີ່ຄົ້ນຫາ" : "ຍັງບໍ່ມີຫຼັກສູດເປີດສອນ"}
+            description={search
+              ? "ກະລຸນາລອງໃຊ້ຄຳຄົ້ນຫາອື່ນ"
+              : "ຂະນະນີ້ຍັງບໍ່ມີວິຊາທີ່ເປີດໃຫ້ບໍລິການ ກະລຸນາກັບມາເບິ່ງໃໝ່ພາຍຫຼັງ"}
+          />
         )}
       </div>
+
+      {/* ── Pagination ── */}
+      {coursesMeta && coursesMeta.total > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between border-t border-gray-100 pt-6 mt-8 gap-4">
+          <p className="text-sm text-gray-500 font-medium">
+            ສະແດງ {Math.min((coursesMeta.page - 1) * coursesMeta.limit + 1, coursesMeta.total)} ຫາ {Math.min(coursesMeta.page * coursesMeta.limit, coursesMeta.total)} ຈາກທັງໝົດ {coursesMeta.total} ຫຼັກສູດ
+          </p>
+          {totalPages > 1 && (
+            <Pagination className="w-auto mx-0">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    className={page <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+
+                {getPageNumbers().map((pageNum, idx) => (
+                  <PaginationItem key={idx}>
+                    {pageNum === "..." ? (
+                      <PaginationEllipsis />
+                    ) : (
+                      <PaginationLink
+                        isActive={page === pageNum}
+                        onClick={() => setPage(pageNum as number)}
+                        className="cursor-pointer"
+                      >
+                        {pageNum}
+                      </PaginationLink>
+                    )}
+                  </PaginationItem>
+                ))}
+
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={() => setPage((p) => p + 1)}
+                    className={page >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
+        </div>
+      )}
     </div>
   );
 }

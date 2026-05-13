@@ -8,6 +8,19 @@ interface ApiErrorResponse {
   message: string;
 }
 
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T;
+  total: number;
+  page: number;
+  limit: number;
+}
+
 interface Material {
   id: number;
   type: string;
@@ -113,21 +126,38 @@ export interface EmployeeProfile {
   specialSubject: any;
 }
 
+export interface EmployeePortalFilters {
+  page?: number;
+  limit?: number;
+  title?: string;
+  category_id?: number;
+  format?: string;
+  location_type?: string;
+  start_date?: string;
+  end_date?: string;
+}
+
 interface EmployeeStoreState {
   profile: EmployeeProfile | null;
   availableCourses: PortalCourse[];
+  coursesMeta: PaginationMeta | null;
+
   enrollments: PortalEnrollment[];
+  enrollmentsMeta: PaginationMeta | null;
+
   certificates: PortalCertificate[]; // ✅ List ທັງໝົດ
+  certificatesMeta: PaginationMeta | null;
+
   currentCertificate: PortalCertificate | null; // ✅ ສຳລັບ enrollment ທີ່ select
   currentCourse: PortalCourse | null;
   isLoading: boolean;
   error: string | null;
 
   fetchProfile: () => Promise<void>;
-  fetchAvailableCourses: () => Promise<void>;
+  fetchAvailableCourses: (filters?: EmployeePortalFilters) => Promise<void>;
   fetchCourseById: (id: number) => Promise<void>;
-  fetchMyEnrollments: () => Promise<void>;
-  fetchMyCertificates: () => Promise<void>; // ✅ ດຶງທັງໝົດ
+  fetchMyEnrollments: (filters?: EmployeePortalFilters) => Promise<void>;
+  fetchMyCertificates: (filters?: EmployeePortalFilters) => Promise<void>; // ✅ ດຶງທັງໝົດ
   fetchCertificate: (enrollmentId: number) => Promise<void>; // ✅ ດຶງຕາມ enrollment
   uploadCertificate: (enrollmentId: number, file: File) => Promise<void>;
 }
@@ -135,8 +165,11 @@ interface EmployeeStoreState {
 export const useEmployeeStore = create<EmployeeStoreState>((set) => ({
   profile: null,
   availableCourses: [],
+  coursesMeta: null,
   enrollments: [],
+  enrollmentsMeta: null,
   certificates: [],
+  certificatesMeta: null,
   currentCertificate: null,
   currentCourse: null,
   isLoading: false,
@@ -158,13 +191,18 @@ export const useEmployeeStore = create<EmployeeStoreState>((set) => ({
     }
   },
 
-  fetchAvailableCourses: async () => {
+  fetchAvailableCourses: async (filters) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.get<PortalCourse[]>(
+      const response = await api.get<PaginatedResponse<PortalCourse[]>>(
         "/employee-portal/courses",
+        { params: filters }
       );
-      set({ availableCourses: response.data || [], isLoading: false });
+      set({ 
+        availableCourses: response.data.data || [], 
+        coursesMeta: { total: response.data.total, page: response.data.page, limit: response.data.limit },
+        isLoading: false 
+      });
     } catch (error: unknown) {
       const axiosError = error as AxiosError<ApiErrorResponse>;
       const errorMessage =
@@ -191,18 +229,23 @@ export const useEmployeeStore = create<EmployeeStoreState>((set) => ({
     }
   },
 
-  fetchMyEnrollments: async () => {
+  fetchMyEnrollments: async (filters) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.get<PortalEnrollment[]>(
+      const response = await api.get<PaginatedResponse<PortalEnrollment[]>>(
         "/employee-portal/enrollments",
+        { params: filters }
       );
       // Transform certificate_url to full URLs
-      const enrichedEnrollments = (response.data || []).map((enrollment) => ({
+      const enrichedEnrollments = (response.data.data || []).map((enrollment) => ({
         ...enrollment,
         certificate_url: getCertificateUrl(enrollment.certificate_url),
       }));
-      set({ enrollments: enrichedEnrollments, isLoading: false });
+      set({ 
+        enrollments: enrichedEnrollments, 
+        enrollmentsMeta: { total: response.data.total, page: response.data.page, limit: response.data.limit },
+        isLoading: false 
+      });
     } catch (error: unknown) {
       const axiosError = error as AxiosError<ApiErrorResponse>;
       const errorMessage =
@@ -213,18 +256,23 @@ export const useEmployeeStore = create<EmployeeStoreState>((set) => ({
   },
 
   // ✅ ດຶງ certificates ທັງໝົດຂອງຕົນເອງ → GET /employee-portal/certificates
-  fetchMyCertificates: async () => {
+  fetchMyCertificates: async (filters) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.get<PortalCertificate[]>(
+      const response = await api.get<PaginatedResponse<PortalCertificate[]>>(
         "/employee-portal/certificates",
+        { params: filters }
       );
       // Transform certificate_url to full URLs
-      const enrichedCertificates = (response.data || []).map((cert) => ({
+      const enrichedCertificates = (response.data.data || []).map((cert) => ({
         ...cert,
         certificate_url: getCertificateUrl(cert.certificate_url),
       }));
-      set({ certificates: enrichedCertificates, isLoading: false });
+      set({ 
+        certificates: enrichedCertificates, 
+        certificatesMeta: { total: response.data.total, page: response.data.page, limit: response.data.limit },
+        isLoading: false 
+      });
     } catch (error: unknown) {
       const axiosError = error as AxiosError<ApiErrorResponse>;
       const errorMessage =
@@ -271,24 +319,26 @@ export const useEmployeeStore = create<EmployeeStoreState>((set) => ({
 
       // ✅ Refresh ທັງ enrollments ແລະ certificates ພ້ອມກັນ
       const [enrollRes, certRes] = await Promise.all([
-        api.get<PortalEnrollment[]>("/employee-portal/enrollments"),
-        api.get<PortalCertificate[]>("/employee-portal/certificates"),
+        api.get<PaginatedResponse<PortalEnrollment[]>>("/employee-portal/enrollments"),
+        api.get<PaginatedResponse<PortalCertificate[]>>("/employee-portal/certificates"),
       ]);
 
       // Transform certificate URLs to full URLs
-      const enrichedEnrollments = (enrollRes.data || []).map((enrollment) => ({
+      const enrichedEnrollments = (enrollRes.data.data || []).map((enrollment) => ({
         ...enrollment,
         certificate_url: getCertificateUrl(enrollment.certificate_url),
       }));
 
-      const enrichedCertificates = (certRes.data || []).map((cert) => ({
+      const enrichedCertificates = (certRes.data.data || []).map((cert) => ({
         ...cert,
         certificate_url: getCertificateUrl(cert.certificate_url),
       }));
 
       set({
         enrollments: enrichedEnrollments,
+        enrollmentsMeta: { total: enrollRes.data.total, page: enrollRes.data.page, limit: enrollRes.data.limit },
         certificates: enrichedCertificates,
+        certificatesMeta: { total: certRes.data.total, page: certRes.data.page, limit: certRes.data.limit },
         isLoading: false,
       });
     } catch (error: unknown) {

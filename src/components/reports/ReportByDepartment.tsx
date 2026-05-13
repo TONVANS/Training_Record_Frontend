@@ -1,7 +1,7 @@
 // src/components/reports/ReportByDepartment.tsx
 "use client";
-import React, { useEffect, useState } from "react";
-import { Users, Printer, Eye, Loader2, Filter, Check, ChevronsUpDown } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Users, Printer, Eye, Loader2, Filter, Check, ChevronsUpDown, ChevronRight, CalendarDays, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { downloadDepartmentReportPDF, generateDepartmentPreviewHtmlUrl, fetchAllDeptReportPagesForPDF } from "@/util/pdfDepartmentReport";
 import { toast } from "sonner";
 import { ReportPagination } from "@/components/ui/ReportPagination";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 export function ReportByDepartment() {
     const { reportData, departments, isLoading, fetchReport, fetchDepartments, setPage, currentPage } = useDepartmentReportStore();
@@ -30,6 +31,17 @@ export function ReportByDepartment() {
     const [filterYear, setFilterYear] = useState<number>(currentYear);
     const [filterType, setFilterType] = useState<ReportPeriodType>("MONTHLY");
     const [filterValue, setFilterValue] = useState<number>(new Date().getMonth() + 1);
+
+    // State สำหรับควบคุมการเปิด/ปิด Popover ปี
+    const [isYearPopoverOpen, setIsYearPopoverOpen] = useState(false);
+
+    // 💡 Generate Years Array (เรียงจากใหม่ไปเก่า) - ให้ครอบคลุมช่วงปีที่เหมาะสม
+    const yearGridOptions = useMemo(() => {
+        const startYear = 2010;
+        const endYear = currentYear + 2;
+        const totalYears = endYear - startYear + 1;
+        return Array.from({ length: totalYears }, (_, i) => endYear - i);
+    }, [currentYear]);
 
     useEffect(() => { fetchDepartments(); }, [fetchDepartments]);
 
@@ -45,8 +57,8 @@ export function ReportByDepartment() {
         fetchReport(Number(selectedDeptId), filterYear, filterType, valueToSend);
     }, [selectedDeptId, filterYear, filterType, filterValue, fetchReport]);
 
-    const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const newType = e.target.value as ReportPeriodType;
+    const handleTypeChange = (value: string) => {
+        const newType = value as ReportPeriodType;
         setFilterType(newType);
         if (newType !== "YEARLY") setFilterValue(1);
     };
@@ -54,16 +66,16 @@ export function ReportByDepartment() {
     const renderValueOptions = () => {
         if (filterType === "MONTHLY")
             return Array.from({ length: 12 }, (_, i) => (
-                <option key={i + 1} value={i + 1}>ເດືອນ {i + 1}</option>
+                <SelectItem key={i + 1} value={(i + 1).toString()}>ເດືອນ {i + 1}</SelectItem>
             ));
         if (filterType === "QUARTERLY")
             return Array.from({ length: 4 }, (_, i) => (
-                <option key={i + 1} value={i + 1}>ໄຕມາດ {i + 1}</option>
+                <SelectItem key={i + 1} value={(i + 1).toString()}>ໄຕມາດ {i + 1}</SelectItem>
             ));
         if (filterType === "HALF_YEARLY")
             return [
-                <option key={1} value={1}>6 ເດືອນຕົ້ນປີ (1-6)</option>,
-                <option key={2} value={2}>6 ເດືອນທ້າຍປີ (7-12)</option>,
+                <SelectItem key={1} value="1">6 ເດືອນຕົ້ນປີ (1-6)</SelectItem>,
+                <SelectItem key={2} value="2">6 ເດືອນທ້າຍປີ (7-12)</SelectItem>,
             ];
         return null;
     };
@@ -102,6 +114,10 @@ export function ReportByDepartment() {
 
     const selectedDeptName = departments.find((d) => d.id === Number(selectedDeptId))?.name;
 
+    // Helper functions สำหรับปุ่ม เลื่อนปี
+    const handlePrevYear = () => setFilterYear(prev => prev - 1);
+    const handleNextYear = () => setFilterYear(prev => prev + 1);
+
     return (
         <div className="space-y-4 h-full flex flex-col">
 
@@ -127,117 +143,161 @@ export function ReportByDepartment() {
                     </div>
                 </div>
 
-                {/* Right: Controls */}
-                <div className="flex flex-wrap items-center gap-3">
+                {/* Right: Controls & Actions */}
+                <div className="flex flex-col sm:flex-row flex-wrap xl:flex-nowrap items-stretch sm:items-center gap-3">
 
-                    {/* Department Combobox */}
-                    <Popover open={openDeptCombobox} onOpenChange={setOpenDeptCombobox}>
-                        <PopoverTrigger asChild>
-                            <Button
-                                variant="outline"
-                                role="combobox"
-                                aria-expanded={openDeptCombobox}
-                                disabled={departments.length === 0}
-                                className="h-9 min-w-[180px] justify-between border-gray-300 rounded-lg text-sm bg-white font-normal hover:bg-white"
-                            >
-                                <Filter size={13} className="text-gray-400 shrink-0" />
-                                <span className="truncate flex-1 text-left mx-2 font-semibold text-indigo-700">
-                                    {departments.length === 0 ? "ກຳລັງໂຫຼດ..." : selectedDeptName ?? "ເລືອກຝ່າຍ"}
-                                </span>
-                                <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                            style={{ width: "var(--radix-popover-trigger-width)" }}
-                            className="p-0"
-                            align="start"
-                        >
-                            <Command>
-                                <CommandInput placeholder="ຄົ້ນຫາຝ່າຍ..." />
-                                <CommandList>
-                                    <CommandEmpty>ບໍ່ພົບຝ່າຍທີ່ຄົ້ນຫາ.</CommandEmpty>
-                                    <CommandGroup>
-                                        {departments.map((dept) => (
-                                            <CommandItem
-                                                key={dept.id}
-                                                value={dept.name}
-                                                onSelect={() => {
-                                                    setSelectedDeptId(dept.id);
-                                                    setOpenDeptCombobox(false);
-                                                }}
-                                            >
-                                                <Check className={cn(
-                                                    "mr-2 h-4 w-4",
-                                                    selectedDeptId === dept.id ? "opacity-100" : "opacity-0"
-                                                )} />
-                                                {dept.name}
-                                            </CommandItem>
-                                        ))}
-                                    </CommandGroup>
-                                </CommandList>
-                            </Command>
-                        </PopoverContent>
-                    </Popover>
+                    {/* Filters Toolbar */}
+                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 bg-gray-50/50 p-1.5 rounded-lg border border-gray-200 w-full sm:w-auto">
 
-                    {/* Period filter group */}
-                    <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-lg border border-gray-200">
-                        <Filter size={16} className="text-gray-400 ml-2" />
-
-                        {/* Period type */}
-                        <select
-                            className="bg-transparent border-none text-sm focus:ring-0 cursor-pointer outline-none"
-                            value={filterType}
-                            onChange={handleTypeChange}
-                        >
-                            <option value="MONTHLY">ປະຈຳເດືອນ</option>
-                            <option value="QUARTERLY">ປະຈຳໄຕມາດ</option>
-                            <option value="HALF_YEARLY">ປະຈຳ 6 ເດືອນ</option>
-                            <option value="YEARLY">ປະຈຳປີ</option>
-                        </select>
-
-                        {/* Period value */}
-                        {filterType !== "YEARLY" && (
-                            <>
-                                <div className="w-px h-4 bg-gray-300 mx-1" />
-                                <select
-                                    className="bg-transparent border-none text-sm focus:ring-0 cursor-pointer outline-none"
-                                    value={filterValue}
-                                    onChange={(e) => setFilterValue(Number(e.target.value))}
+                        {/* 1. Department Selector */}
+                        <Popover open={openDeptCombobox} onOpenChange={setOpenDeptCombobox}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={openDeptCombobox}
+                                    disabled={departments.length === 0}
+                                    className="h-9 sm:w-[200px] w-full justify-between bg-white border-gray-200 hover:bg-gray-50 shadow-sm"
                                 >
-                                    {renderValueOptions()}
-                                </select>
-                            </>
-                        )}
+                                    <div className="flex items-center truncate">
+                                        <Filter size={14} className="text-gray-400 mr-2 shrink-0" />
+                                        <span className="truncate font-medium text-gray-700">
+                                            {departments.length === 0 ? "ກຳລັງໂຫຼດ..." : selectedDeptName ?? "ເລືອກຝ່າຍ"}
+                                        </span>
+                                    </div>
+                                    <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 text-gray-400" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[250px] p-0" align="start">
+                                <Command>
+                                    <CommandInput placeholder="ຄົ້ນຫາຝ່າຍ..." />
+                                    <CommandList>
+                                        <CommandEmpty>ບໍ່ພົບຝ່າຍທີ່ຄົ້ນຫາ.</CommandEmpty>
+                                        <CommandGroup>
+                                            {departments.map((dept) => (
+                                                <CommandItem
+                                                    key={dept.id}
+                                                    value={dept.name}
+                                                    onSelect={() => {
+                                                        setSelectedDeptId(dept.id);
+                                                        setOpenDeptCombobox(false);
+                                                    }}
+                                                    className="cursor-pointer"
+                                                >
+                                                    <Check className={cn(
+                                                        "mr-2 h-4 w-4 text-indigo-600",
+                                                        selectedDeptId === dept.id ? "opacity-100" : "opacity-0"
+                                                    )} />
+                                                    {dept.name}
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
 
-                        <div className="w-px h-4 bg-gray-300 mx-1" />
+                        <div className="hidden sm:block w-px h-5 bg-gray-300 mx-1" />
 
-                        {/* Year */}
-                        <select
-                            className="bg-transparent border-none text-sm focus:ring-0 cursor-pointer outline-none mr-2"
-                            value={filterYear}
-                            onChange={(e) => setFilterYear(Number(e.target.value))}
-                        >
-                            {Array.from({ length: 5 }, (_, i) => currentYear - 2 + i).map((y) => (
-                                <option key={y} value={y}>{y}</option>
-                            ))}
-                        </select>
+                        {/* 2. Period Type & Value (Upgraded to shadcn Select) */}
+                        <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+                            <Select value={filterType} onValueChange={handleTypeChange}>
+                                <SelectTrigger className="h-9 bg-white border-gray-200 min-w-[120px] shadow-sm font-medium text-gray-700">
+                                    <SelectValue placeholder="ເລືອກປະເພດ" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="MONTHLY">ປະຈຳເດືອນ</SelectItem>
+                                    <SelectItem value="QUARTERLY">ປະຈຳໄຕມາດ</SelectItem>
+                                    <SelectItem value="HALF_YEARLY">ປະຈຳ 6 ເດືອນ</SelectItem>
+                                    <SelectItem value="YEARLY">ປະຈຳປີ</SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            {filterType !== "YEARLY" && (
+                                <Select
+                                    value={filterValue.toString()}
+                                    onValueChange={(val) => setFilterValue(Number(val))}
+                                >
+                                    <SelectTrigger className="h-9 bg-white border-gray-200 min-w-[110px] shadow-sm font-medium text-gray-700">
+                                        <SelectValue placeholder="ເລືອກຊ່ວງ" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {renderValueOptions()}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        </div>
+
+                        {/* 3. Year Stepper Control */}
+                        <div className="flex items-center bg-white rounded-md border border-gray-200 shadow-sm">
+                            <button
+                                onClick={handlePrevYear}
+                                className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-l-md transition-colors"
+                                title="ປີກ່ອນໜ້າ"
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
+
+                            <div className="w-px h-4 bg-gray-200" />
+
+                            <Popover open={isYearPopoverOpen} onOpenChange={setIsYearPopoverOpen}>
+                                <PopoverTrigger asChild>
+                                    <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold text-gray-700 hover:text-indigo-600 transition-colors min-w-[70px] justify-center">
+                                        <CalendarDays size={14} className="text-gray-400" />
+                                        {filterYear}
+                                    </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-64 p-3" align="end">
+                                    <div className="mb-2 font-medium text-sm text-gray-700">ເລືອກປີ</div>
+                                    <div className="grid grid-cols-4 gap-2 max-h-[200px] overflow-y-auto p-1 custom-scrollbar">
+                                        {yearGridOptions.map((year) => (
+                                            <button
+                                                key={year}
+                                                onClick={() => {
+                                                    setFilterYear(year);
+                                                    setIsYearPopoverOpen(false);
+                                                }}
+                                                className={cn(
+                                                    "py-1.5 text-sm rounded-md transition-all",
+                                                    filterYear === year
+                                                        ? "bg-indigo-600 text-white font-bold shadow-md"
+                                                        : "hover:bg-indigo-50 text-gray-700 font-medium"
+                                                )}
+                                            >
+                                                {year}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+
+                            <div className="w-px h-4 bg-gray-200" />
+
+                            <button
+                                onClick={handleNextYear}
+                                className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-r-md transition-colors"
+                                title="ປີຖັດໄປ"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
                         <Button
                             onClick={handlePreview}
                             disabled={!reportData || reportData.data.length === 0}
                             variant="outline"
-                            className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                            className="flex-1 sm:flex-none h-10 gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 bg-white"
                         >
                             <Eye size={18} />
-                            <span className="hidden sm:inline">ເບິ່ງຕົວຢ່າງ</span>
+                            <span>ເບິ່ງຕົວຢ່າງ</span>
                         </Button>
                         <Button
                             onClick={handleDownloadPdf}
                             disabled={!reportData || reportData.data.length === 0 || isDownloading}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2"
+                            className="flex-1 sm:flex-none h-10 gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
                         >
                             {isDownloading
                                 ? <Loader2 className="w-4 h-4 animate-spin" />
