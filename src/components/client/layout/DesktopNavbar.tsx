@@ -1,5 +1,5 @@
+// src/components/client/layout/DesktopNavbar.tsx
 "use client";
-
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -33,9 +33,15 @@ export const DesktopNavbar = ({ navItems, pathname }: DesktopNavbarProps) => {
               className="object-contain opacity-90 group-hover:opacity-100 transition-opacity"
             />
           </div>
-          <span className="font-extrabold text-lg text-gray-900 tracking-tight group-hover:text-[#1275e2] transition-colors">
-            Lao Training
-          </span>
+
+          <div className="flex flex-col justify-center">
+            <span className="font-extrabold text-[15px] leading-tight text-gray-900 tracking-tight group-hover:text-[#1275e2] transition-colors">
+              ລະບົບບັນທຶກການຝຶກອົບຮົມ
+            </span>
+            <span className="text-[10px] text-gray-500 font-medium tracking-wide">
+              Training Record System
+            </span>
+          </div>
         </Link>
 
         {/* 📌 Nav Links */}
@@ -47,11 +53,10 @@ export const DesktopNavbar = ({ navItems, pathname }: DesktopNavbarProps) => {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
-                  isActive
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${isActive
                     ? "bg-blue-50 text-[#1275e2]"
                     : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
                 {item.label}

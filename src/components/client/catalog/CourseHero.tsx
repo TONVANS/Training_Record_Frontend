@@ -19,7 +19,7 @@ export const CourseHero = ({ course, isEnrolled }: CourseHeroProps) => {
       
       <div className="relative z-10 flex flex-col md:flex-row gap-8 md:items-start">
         {/* Icon/Image Placeholder */}
-        <div className="w-24 h-24 md:w-32 md:h-32 shrink-0 rounded-3xl bg-gradient-to-br from-[#1275e2] to-[#0a468c] flex items-center justify-center shadow-xl shadow-blue-500/20">
+        <div className="w-24 h-24 md:w-32 md:h-32 shrink-0 rounded-3xl bg-linear-to-br from-[#1275e2] to-[#0a468c] flex items-center justify-center shadow-xl shadow-blue-500/20">
           <Library size={48} className="text-white" />
         </div>
 
@@ -42,7 +42,7 @@ export const CourseHero = ({ course, isEnrolled }: CourseHeroProps) => {
             )}
           </div>
 
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-900 leading-[1.15] tracking-tight">
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-extrabold text-gray-900 leading-[1.15] tracking-tight">
             {course.title}
           </h1>
 
@@ -51,10 +51,10 @@ export const CourseHero = ({ course, isEnrolled }: CourseHeroProps) => {
               <Calendar size={18} className="text-[#1275e2]" />
               <span>{format(new Date(course.start_date), "dd MMM yyyy")} – {format(new Date(course.end_date), "dd MMM yyyy")}</span>
             </div>
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <Clock size={18} className="text-[#1275e2]" />
               <span>8:30 AM – 4:00 PM</span>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

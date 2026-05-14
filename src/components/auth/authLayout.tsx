@@ -41,7 +41,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
                 />
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-white drop-shadow-sm">Lao Training Sys</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-white drop-shadow-sm">Training Record System</h1>
                 <p className="text-sm font-medium text-blue-100/80 uppercase tracking-widest mt-0.5">ລະບົບຈັດການການຝຶກອົບຮົມ</p>
               </div>
             </div>

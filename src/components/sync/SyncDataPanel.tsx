@@ -312,7 +312,7 @@ export default function SyncDataPanel() {
             </div>
             <p className="text-blue-100 font-medium text-sm sm:text-base max-w-lg opacity-90">
               ດຶງຂໍ້ມູນໂຄງສ້າງອົງກອນ ແລະ ພະນັກງານຈາກລະບົບ HRM
-              ມາອັບເດດໃນລະບົບ Training Management.
+              ມາອັບເດດໃນລະບົບ Training Record.
             </p>
           </div>
 

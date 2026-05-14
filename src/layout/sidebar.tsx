@@ -50,7 +50,7 @@ const menuGroups = [
         items: [
             { name: 'Sync ຂໍ້ມູນ HRM', href: '/sync_data', icon: DatabaseZap },
             { name: 'ຈັດການສິດຜູ້ໃຊ້', href: '/role_management', icon: UserStar },
-            { name: 'ແຈ້ງເຕືອນ', href: '/notification', icon: CalendarCog },
+            // { name: 'ແຈ້ງເຕືອນ', href: '/notification', icon: CalendarCog },
             // { name: 'ຕັ້ງຄ່າ (Settings)', href: '/settings', icon: Settings },
         ]
     }
@@ -83,6 +83,7 @@ export function Sidebar({ isOpen, onClose, currentPath, isCollapsed, toggleColla
                     style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
 
                 <div className="relative z-10 flex flex-col h-full overflow-hidden">
+                    {/* STREAMING_CHUNK:Rendering Updated Header & Logo... */}
                     {/* Header & Logo */}
                     <div className="h-16 flex items-center justify-between px-4 border-b border-white/10 shrink-0 bg-white/5">
                         <div className="flex items-center overflow-hidden whitespace-nowrap">
@@ -97,20 +98,27 @@ export function Sidebar({ isOpen, onClose, currentPath, isCollapsed, toggleColla
                                 />
                             </div>
 
-                            <span className={cn(
-                                "font-bold text-lg tracking-wide transition-opacity duration-200 drop-shadow-sm",
-                                isCollapsed ? "opacity-0 w-0 hidden" : "opacity-100"
+                            {/* ສ່ວນທີ່ມີການປັບປຸງ: ສະແດງຊື່ພາສາລາວ ແລະ ອັງກິດ */}
+                            <div className={cn(
+                                "flex flex-col justify-center transition-all duration-200",
+                                isCollapsed ? "opacity-0 w-0 hidden" : "opacity-100 w-auto"
                             )}>
-                                Lao Training
-                            </span>
+                                <span className="font-bold text-[15px] leading-tight tracking-wide drop-shadow-sm text-white">
+                                    ລະບົບບັນທຶກການຝຶກອົບຮົມ
+                                </span>
+                                <span className="text-[10px] text-blue-200/80 font-medium tracking-wide">
+                                    Training Record System
+                                </span>
+                            </div>
                         </div>
 
                         {/* Mobile Close Button */}
-                        <button className="lg:hidden text-white/70 hover:text-white bg-white/5 p-1.5 rounded-lg" onClick={onClose}>
+                        <button className="lg:hidden text-white/70 hover:text-white bg-white/5 p-1.5 rounded-lg shrink-0 ml-2" onClick={onClose}>
                             <X size={20} />
                         </button>
                     </div>
 
+                    {/* STREAMING_CHUNK:Rendering Navigation Menu... */}
                     {/* Navigation Menu (Grouped) */}
                     {/* 💡 ປັບປຸງ Scrollbar ໃຫ້ນຽນຕາ (Custom Scrollbar Styling for Sidebar) */}
                     <nav className={cn(
@@ -129,7 +137,7 @@ export function Sidebar({ isOpen, onClose, currentPath, isCollapsed, toggleColla
                                         {group.label}
                                     </p>
                                 )}
-                                
+
                                 <div className="space-y-1">
                                     {group.items.map((menu) => {
                                         const isActive = menu.href === '/dashboard'
@@ -171,6 +179,7 @@ export function Sidebar({ isOpen, onClose, currentPath, isCollapsed, toggleColla
                         ))}
                     </nav>
 
+                    {/* STREAMING_CHUNK:Rendering Bottom Controls (Collapse & Profile)... */}
                     {/* Collapse Toggle Button (Desktop Only) */}
                     <div className="hidden lg:flex justify-end p-3 border-t border-white/10 shrink-0">
                         <button
@@ -191,7 +200,7 @@ export function Sidebar({ isOpen, onClose, currentPath, isCollapsed, toggleColla
                             <div className="w-9 h-9 shrink-0 rounded-full bg-[#1275e2] flex items-center justify-center text-white border-2 border-white/20 shadow-sm">
                                 <User size={18} />
                             </div>
-                            
+
                             <div className={cn(
                                 "flex-1 min-w-0 transition-all duration-300",
                                 isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100"

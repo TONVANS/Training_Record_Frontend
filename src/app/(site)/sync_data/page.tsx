@@ -3,7 +3,7 @@ import SyncDataPanel from "@/components/sync/SyncDataPanel";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Sync ຂໍ້ມູນ HRM | Lao Training Management System",
+  title: "Sync ຂໍ້ມູນ HRM | Training Record System",
   description: "ລະບົບ Sync ຂໍ້ມູນພະນັກງານ ແລະ ໂຄງສ້າງອົງກອນຈາກ HRM API",
 };
 

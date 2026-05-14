@@ -41,7 +41,7 @@ export const CourseSidebar = ({ course, isEnrolled, enrollmentStatus }: CourseSi
             <div className="space-y-4">
               <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
                 <p className="text-sm font-medium text-blue-800 leading-relaxed">
-                  ຫຼັກສູດນີ້ກຳລັງເປີດໃຫ້ລົງທະບຽນ. ກະລຸນາຕິດຕໍ່ຜູ້ຈັດການຝ່າຍບຸກຄົນ ຫຼື ແອັດມິນເພື່ອລົງທະບຽນ.
+                  ຫາກທ່ານຕ້ອງການລົງທະບຽນເຂົ້າຮຽນຫຼັກສູດນີ້ ກະລຸນາຕິດຕໍ່ພົວພັນກັບພະແນກພັດທະນາບຸກຄະລາກອນ ຫຼື ແອັດມິນເພື່ອລົງທະບຽນ.
                 </p>
               </div>
               <button 
@@ -63,7 +63,7 @@ export const CourseSidebar = ({ course, isEnrolled, enrollmentStatus }: CourseSi
             </div>
             <div>
               <p className="text-[10px] font-bold text-gray-400 uppercase">ອົງກອນ/ສະຖາບັນ</p>
-              <p className="text-sm font-bold text-gray-800">{course.institution || course.organization || "Lao Training Center"}</p>
+              <p className="text-sm font-bold text-gray-800">{course.institution || course.organization || "Training Center"}</p>
             </div>
           </div>
 

@@ -13,7 +13,7 @@ const notoSanLao = Noto_Sans_Lao({
 });
 
 export const metadata: Metadata = {
-  title: "Training Management System",
+  title: "Training Record System",
   description: "Enterprise Training & Development Dashboard",
 };
 
